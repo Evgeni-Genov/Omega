@@ -1,10 +1,12 @@
 package com.example.omega.domain;
 
 import com.example.omega.domain.enumeration.AccountStatus;
+import com.example.omega.domain.enumeration.Roles;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table
@@ -36,10 +38,33 @@ public class User extends AbstractAuditingEntity {
     private String phoneNumber;
 
     @Column
-    @OneToOne
-    private AccountBalance balance;
-
-    @Column
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
+
+    @Column
+    private String address;
+
+    @Column
+    private String townOfBirth;
+
+    @Column
+    private String countryOfBirth;
+
+    @Column
+    @OneToMany
+    private List<AccountBalance> accountBalances;
+
+    @Column
+    @OneToMany(mappedBy = "sender")
+    private List<Transaction> outgoingTransactions;
+
+    @Column
+    @OneToMany(mappedBy = "recipient")
+    private List<Transaction> incomingTransactions;
+
+    @Column
+    private List<Roles> roles;
+
+    @Column
+    private boolean twoFactorAuthentication;
 }

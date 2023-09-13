@@ -1,11 +1,8 @@
 package com.example.omega.domain;
 
-import com.example.omega.domain.enumeration.Currency;
+import com.example.omega.domain.enumeration.TransactionStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.math.BigDecimal;
-
 
 @Entity
 @Table
@@ -14,7 +11,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Builder
-public class AccountBalance {
+public class TransactionStateHistory extends AbstractAuditingEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
@@ -22,13 +19,17 @@ public class AccountBalance {
     private Long id;
 
     @Column
-    @ManyToOne
-    private User user;
+    private Long transactionId;
 
     @Column
     @Enumerated(EnumType.STRING)
-    private Currency currency;
+    private TransactionStatus previousState;
 
     @Column
-    private BigDecimal balance;
+    @Enumerated(EnumType.STRING)
+    private TransactionStatus newState;
+
+    @ManyToOne
+    @JoinColumn(name = "transaction_id")
+    private Transaction transaction;
 }

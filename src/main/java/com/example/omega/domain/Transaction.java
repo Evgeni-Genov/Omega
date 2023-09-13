@@ -2,10 +2,12 @@ package com.example.omega.domain;
 
 import com.example.omega.domain.enumeration.Currency;
 import com.example.omega.domain.enumeration.TransactionStatus;
+import com.example.omega.domain.enumeration.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table
@@ -21,14 +23,19 @@ public class Transaction extends AbstractAuditingEntity{
     @SequenceGenerator(name = "sequenceGenerator")
     private Long id;
 
-    @Column
+    @ManyToOne
+    @JoinColumn(name = "sender_id")
     private User sender;
 
-    @Column
-    private User recipeint;
+    @ManyToOne
+    @JoinColumn(name = "recipient_id")
+    private User recipient;
 
     @Column
     private BigDecimal amount;
+
+    @Column
+    private String description;
 
     @Column
     @Enumerated(EnumType.STRING)
@@ -37,4 +44,13 @@ public class Transaction extends AbstractAuditingEntity{
     @Column
     @Enumerated(EnumType.STRING)
     private TransactionStatus transactionStatus;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private TransactionType transactionType;
+
+    @Column
+    @OneToMany(mappedBy = "transaction")
+    private List<TransactionStateHistory> transactionStateHistories;
+
 }

@@ -1,11 +1,7 @@
 package com.example.omega.domain;
 
-import com.example.omega.domain.enumeration.Currency;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.math.BigDecimal;
-
 
 @Entity
 @Table
@@ -14,21 +10,22 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Builder
-public class AccountBalance {
+public class UserDocument extends AbstractAuditingEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
     private Long id;
 
-    @Column
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column
-    @Enumerated(EnumType.STRING)
-    private Currency currency;
+    @Column(nullable = false)
+    private String documentType;
 
-    @Column
-    private BigDecimal balance;
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(nullable = false)
+    private byte[] documentData;
 }
