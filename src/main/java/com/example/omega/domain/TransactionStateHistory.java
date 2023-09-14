@@ -19,9 +19,6 @@ public class TransactionStateHistory extends AbstractAuditingEntity{
     private Long id;
 
     @Column
-    private Long transactionId;
-
-    @Column
     @Enumerated(EnumType.STRING)
     private TransactionStatus previousState;
 

@@ -21,7 +21,7 @@ public class AccountBalance {
     @SequenceGenerator(name = "sequenceGenerator")
     private Long id;
 
-    @Column
+    @JoinColumn(name = "user_id")
     @ManyToOne
     private User user;
 

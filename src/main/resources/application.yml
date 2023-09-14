@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:6666/omegaDB
+    username: admin
+    password: admin
+  liquibase:
+    change-log: classpath:liquibase/master.xml
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: public
+
+logging:
+  level:
+    org:
+      springframework: info
+
+application:
+  name: omega
+  version: 1.0.0-SNAPSHOT
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include:
+          [
+            'health',
+            'info',
+          ]
+
+global:
+  exception-handling:
+    debug-message: true
