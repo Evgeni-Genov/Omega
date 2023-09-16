@@ -4,24 +4,17 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd">
 
-    <!-- Create the 'user' table -->
-    <changeSet id="create-user-table" author="admin">
-        <createTable tableName="user">
+    <!-- Create the 'your_table_name' table -->
+    <changeSet id="create-account-balance-table" author="admin">
+        <createTable tableName="account_balance">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="user_name" type="varchar(255)">
-                <constraints unique="true" nullable="false" />
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" />
             </column>
-            <column name="email" type="varchar(255)" />
-            <column name="password" type="varchar(255)" />
-            <column name="name_tag" type="varchar(255)" />
-            <column name="phone_number" type="varchar(255)" />
-            <column name="account_status" type="varchar(255)" />
-            <column name="address" type="varchar(255)" />
-            <column name="town_of_birth" type="varchar(255)" />
-            <column name="country_of_birth" type="varchar(255)" />
-            <column name="two_factor_authentication" type="BOOLEAN" />
+            <column name="currency" type="varchar(255)" />
+            <column name="balance" type="NUMERIC" />
 
             <!-- Auditing columns -->
             <column name="created_by" type="varchar(255)" />
@@ -33,4 +26,13 @@
 
     <!-- Add foreign key constraints here -->
 
+    <changeSet id="add-foreign-key-account-balance" author="admin">
+        <addForeignKeyConstraint
+                baseTableName="account_balance"
+                baseColumnNames="user_id"
+                constraintName="fk_account_balance_user"
+                referencedTableName="user"
+                referencedColumnNames="id"
+        />
+    </changeSet>
 </databaseChangeLog>

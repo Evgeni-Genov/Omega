@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd">
+
+    <!-- Create the 'transaction' table -->
+    <changeSet id="create-transaction-table" author="admin">
+        <createTable tableName="transaction">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="sender_id" type="BIGINT"> <!-- Use sender_id -->
+                <constraints nullable="false" />
+            </column>
+            <column name="recipient_id" type="BIGINT"> <!-- Use recipient_id -->
+                <constraints nullable="false" />
+            </column>
+            <column name="currency" type="varchar(255)" />
+            <column name="balance" type="NUMERIC" />
+
+            <!-- Auditing columns -->
+            <column name="created_by" type="varchar(255)" />
+            <column name="created_date" type="timestamp" />
+            <column name="last_modified_by" type="varchar(255)" />
+            <column name="last_modified_date" type="timestamp" />
+        </createTable>
+    </changeSet>
+
+    <!-- Add foreign key constraints here -->
+
+    <changeSet id="add-foreign-key-sender" author="admin">
+        <addForeignKeyConstraint
+                baseTableName="transaction"
+                baseColumnNames="sender_id"
+                constraintName="fk_transaction_sender"
+                referencedTableName="user"
+                referencedColumnNames="id"
+        />
+    </changeSet>
+
+    <changeSet id="add-foreign-key-recipient" author="admin">
+        <addForeignKeyConstraint
+                baseTableName="transaction"
+                baseColumnNames="recipient_id"
+                constraintName="fk_transaction_recipient"
+                referencedTableName="user"
+                referencedColumnNames="id"
+        />
+    </changeSet>
+
+
+</databaseChangeLog>
