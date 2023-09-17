@@ -1,7 +1,15 @@
 package com.example.omega.service.dto;
 
+import com.example.omega.domain.AccountBalance;
+import com.example.omega.domain.Transaction;
+import com.example.omega.domain.enumeration.AccountStatus;
 import com.example.omega.domain.enumeration.Roles;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,9 +24,16 @@ public class UserDTO {
 
     private String email;
 
-    private String nameTag;
+    @Enumerated(EnumType.STRING)
+    private AccountStatus accountStatus;
 
-    private Roles roles;
+    private List<AccountBalance> accountBalances;
+
+    private List<Transaction> outgoingTransactions;
+
+    private List<Transaction> incomingTransactions;
+
+    private List<Roles> roles;
 
     private boolean twoFactorAuthentication;
 }

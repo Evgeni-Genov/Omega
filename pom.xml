@@ -129,7 +129,12 @@
 			<artifactId>mapstruct</artifactId>
 			<version>1.5.5.Final</version>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.zalando</groupId>
+            <artifactId>problem</artifactId>
+            <version>0.25.0</version>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>

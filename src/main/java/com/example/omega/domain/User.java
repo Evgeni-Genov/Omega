@@ -21,6 +21,12 @@ public class User extends AbstractAuditingEntity {
     @SequenceGenerator(name = "sequenceGenerator")
     private Long id;
 
+    @Column
+    private String firstName;
+
+    @Column
+    private String lastName;
+
     @Column(nullable = false, unique = true)
     private String userName;
 

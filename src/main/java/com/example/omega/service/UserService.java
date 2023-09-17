@@ -2,13 +2,17 @@ package com.example.omega.service;
 
 import com.example.omega.domain.User;
 import com.example.omega.domain.enumeration.Roles;
+import com.example.omega.service.dto.UserCreateDTO;
+import com.example.omega.service.dto.UserDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 
 public interface UserService {
 
-    User createUser(User user);
+    UserCreateDTO createUser(UserCreateDTO userCreateDTO);
 
     User updateUser(User user);
 
@@ -32,5 +36,5 @@ public interface UserService {
 
     List<Roles> getRolesByUserId(Long userId);
 
-    List<User> getAllUsers();
+    Page<UserDTO> getAllUsers(Pageable pageable);
 }
