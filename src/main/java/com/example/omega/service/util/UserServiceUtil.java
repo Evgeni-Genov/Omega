@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 /**
  * Helper class which holds helper methods for the UserServiceImpl class
  */
@@ -82,7 +80,7 @@ public class UserServiceUtil {
      *
      * @param username The username for which to generate the name tag.
      * @return A unique name tag consisting of the original username followed by a random alphanumeric
-     *         and symbol string.
+     * and symbol string.
      */
     public String generateNameTag(String username) {
         // Generate a random string of the specified length with alphanumeric and symbol characters

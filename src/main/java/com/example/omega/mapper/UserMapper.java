@@ -11,12 +11,17 @@ import org.mapstruct.Mapper;
 public interface UserMapper {
 
     UserDTO toDTO(User user);
+
     UserCreateDTO toCreateDTO(User user);
+
     UserUpdateDTO toUpdateDTO(User user);
+
     UserCredentialUpdateDTO toUserCredentialUpdateDTO(User user);
 
     User toEntity(UserDTO userDTO);
+
     User toEntity(UserCreateDTO userCreateDTO);
+
     User toEntity(UserCredentialUpdateDTO userCredentialUpdateDTO);
 
 
