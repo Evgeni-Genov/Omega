@@ -135,12 +135,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getByUserName(String userName) {
+    public User getUserByUserName(String userName) {
         return null;
     }
 
     @Override
-    public User getNameTag(String nameTag) {
+    public User getUserByNameTag(String nameTag) {
         return null;
     }
 

@@ -4,7 +4,6 @@ import com.example.omega.domain.AccountBalance;
 import com.example.omega.domain.Transaction;
 import com.example.omega.domain.enumeration.AccountStatus;
 import com.example.omega.domain.enumeration.Roles;
-import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.*;

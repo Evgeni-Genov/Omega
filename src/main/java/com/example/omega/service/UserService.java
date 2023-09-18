@@ -18,9 +18,9 @@ public interface UserService {
 
     User getUserById(Long userId);
 
-    User getByUserName(String userName);
+    User getUserByUserName(String userName);
 
-    User getNameTag(String nameTag);
+    User getUserByNameTag(String nameTag);
 
     User authenticateUserByUserName(String userName, String password);
 
