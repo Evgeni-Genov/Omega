@@ -3,7 +3,9 @@ package com.example.omega.service;
 import com.example.omega.domain.User;
 import com.example.omega.domain.enumeration.Roles;
 import com.example.omega.service.dto.UserCreateDTO;
+import com.example.omega.service.dto.UserCredentialUpdateDTO;
 import com.example.omega.service.dto.UserDTO;
+import com.example.omega.service.dto.UserUpdateDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -14,9 +16,11 @@ public interface UserService {
 
     UserCreateDTO createUser(UserCreateDTO userCreateDTO);
 
-    User updateUser(User user);
+    UserUpdateDTO updateUser(User user);
 
-    User getUserById(Long userId);
+    UserCredentialUpdateDTO updateUserCredentials(User user);
+
+    UserDTO getUserById(Long userId);
 
     User getUserByUserName(String userName);
 

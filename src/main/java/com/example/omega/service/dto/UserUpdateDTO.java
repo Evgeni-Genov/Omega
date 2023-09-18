@@ -2,6 +2,9 @@ package com.example.omega.service.dto;
 
 import lombok.*;
 
+/**
+ * Using this DTO for the update of non-credential user fields.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -13,9 +16,17 @@ public class UserUpdateDTO {
 
     private String userName;
 
-    private String oldPassword;
+    private String firstName;
 
-    private String newPassword;
+    private String lastName;
+
+    private String phoneNumber;
+
+    private String address;
+
+    private String townOfBirth;
+
+    private String countryOfBirth;
 
     private String nameTag;
 }
