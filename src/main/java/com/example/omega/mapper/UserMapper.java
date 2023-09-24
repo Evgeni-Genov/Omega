@@ -1,10 +1,7 @@
 package com.example.omega.mapper;
 
 import com.example.omega.domain.User;
-import com.example.omega.service.dto.UserCreateDTO;
-import com.example.omega.service.dto.UserCredentialUpdateDTO;
-import com.example.omega.service.dto.UserDTO;
-import com.example.omega.service.dto.UserUpdateDTO;
+import com.example.omega.service.dto.*;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
@@ -18,11 +15,17 @@ public interface UserMapper {
 
     UserCredentialUpdateDTO toUserCredentialUpdateDTO(User user);
 
+    UserSearchDTO toUserSearchDTO(User user);
+
     User toEntity(UserDTO userDTO);
 
     User toEntity(UserCreateDTO userCreateDTO);
 
+    User toEntity(UserUpdateDTO userUpdateDTO);
+
     User toEntity(UserCredentialUpdateDTO userCredentialUpdateDTO);
+
+    User toEntity(UserSearchDTO userSearchDTO);
 
 
 }

@@ -16,6 +16,8 @@ public class UserCredentialUpdateDTO {
 
     private String email;
 
+    private String userName;
+
     private boolean twoFactorAuthentication;
 
     private String oldPassword;

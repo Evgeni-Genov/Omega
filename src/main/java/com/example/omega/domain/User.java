@@ -4,6 +4,7 @@ import com.example.omega.domain.enumeration.AccountStatus;
 import com.example.omega.domain.enumeration.Roles;
 import jakarta.persistence.*;
 import lombok.*;
+import org.jboss.aerogear.security.otp.api.Base32;
 
 import java.util.List;
 
@@ -72,4 +73,6 @@ public class User extends AbstractAuditingEntity {
 
     @Column
     private boolean twoFactorAuthentication;
+
+    private String secret = Base32.random();
 }

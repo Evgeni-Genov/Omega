@@ -100,7 +100,7 @@ public class UserServiceUtil {
     public User validateAndGetUser(Long userId) {
         log.debug("Validating and retrieving User by ID: {}", userId);
 
-        if (userId == null || userId <= 0) {
+        if (userId == null) {
             throw new HttpBadRequestException("Invalid userId provided.");
         }
 
