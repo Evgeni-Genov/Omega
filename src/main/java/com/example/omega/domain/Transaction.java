@@ -6,7 +6,6 @@ import com.example.omega.domain.enumeration.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -20,7 +19,7 @@ import java.util.List;
 public class Transaction extends AbstractAuditingEntity{
 
     @Id
-    @GeneratedValue(generator = "transaction_sequence_generator",strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "transaction_sequence_generator", strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(name = "transaction_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 

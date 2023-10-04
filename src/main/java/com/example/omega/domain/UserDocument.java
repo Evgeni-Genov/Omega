@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
-
 @Entity
 @Table
 @AllArgsConstructor
@@ -15,7 +14,7 @@ import lombok.*;
 public class UserDocument extends AbstractAuditingEntity{
 
     @Id
-    @GeneratedValue(generator = "user_document_sequence_generator",strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "user_document_sequence_generator", strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(name = "user_document_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 

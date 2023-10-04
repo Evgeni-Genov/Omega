@@ -23,8 +23,8 @@
             <column name="town_of_birth" type="varchar(255)" />
             <column name="country_of_birth" type="varchar(255)" />
             <column name="two_factor_authentication" type="BOOLEAN" />
-            <column name="locked" type="BOOLEAN" />
-            <column name="enabled" type="BOOLEAN" />
+            <column name="locked" type="BOOLEAN"/>
+            <column name="enabled" type="BOOLEAN"/>
 
             <!-- Auditing columns -->
             <column name="created_by" type="varchar(255)" />

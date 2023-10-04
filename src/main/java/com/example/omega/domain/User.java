@@ -21,7 +21,7 @@ import java.util.List;
 public class User extends AbstractAuditingEntity implements UserDetails {
 
     @Id
-    @GeneratedValue(generator = "user_sequence_generator",strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "user_sequence_generator", strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(name = "user_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 
@@ -105,7 +105,7 @@ public class User extends AbstractAuditingEntity implements UserDetails {
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities () {
+    public Collection<? extends GrantedAuthority> getAuthorities() {
         var authority =
                 new SimpleGrantedAuthority(role.name());
         return Collections.singletonList(authority);

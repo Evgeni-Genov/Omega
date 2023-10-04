@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 
-
 @Entity
 @Table
 @AllArgsConstructor
@@ -16,7 +15,7 @@ import lombok.*;
 public class TransactionStateHistory extends AbstractAuditingEntity{
 
     @Id
-    @GeneratedValue(generator = "transaction_state_history_sequence_generator",strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "transaction_state_history_sequence_generator", strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(name = "transaction_state_history_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 
