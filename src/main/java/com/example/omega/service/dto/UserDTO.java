@@ -2,7 +2,6 @@ package com.example.omega.service.dto;
 
 import com.example.omega.domain.AccountBalance;
 import com.example.omega.domain.Transaction;
-import com.example.omega.domain.enumeration.AccountStatus;
 import com.example.omega.domain.enumeration.Roles;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -23,8 +22,9 @@ public class UserDTO {
 
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    private AccountStatus accountStatus;
+    private Boolean locked;
+
+    private Boolean enabled;
 
     private List<AccountBalance> accountBalances;
 
@@ -32,7 +32,8 @@ public class UserDTO {
 
     private List<Transaction> incomingTransactions;
 
-    private List<Roles> roles;
+    @Enumerated(EnumType.STRING)
+    private Roles role;
 
-    private boolean twoFactorAuthentication;
+    private Boolean twoFactorAuthentication;
 }

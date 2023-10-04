@@ -4,6 +4,7 @@ import com.example.omega.domain.User;
 import com.example.omega.service.dto.*;
 import org.mapstruct.Mapper;
 
+
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
@@ -26,6 +27,4 @@ public interface UserMapper {
     User toEntity(UserCredentialUpdateDTO userCredentialUpdateDTO);
 
     User toEntity(UserSearchDTO userSearchDTO);
-
-
 }

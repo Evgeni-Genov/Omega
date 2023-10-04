@@ -3,11 +3,10 @@ package com.example.omega.service.util;
 import com.example.omega.domain.User;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.exception.HttpBadRequestException;
-import com.example.omega.service.impl.UserServiceImpl;
-import io.micrometer.common.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,9 +17,28 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class UserServiceUtil {
 
-    private final UserServiceImpl userService;
-
     private final UserRepository userRepository;
+
+    /**
+     * Checks if the given email is available, meaning it is not already registered by another user.
+     *
+     * @param email The email address to check for availability.
+     * @return {@code true} if the email is available; {@code false} if it is already registered.
+     */
+    public Boolean isEmailAvailable(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * Checks if the given username is available, meaning it is not already taken by another user.
+     *
+     * @param userName The username to check for availability.
+     * @return {@code true} if the username is available; {@code false} if it is already taken.
+     */
+    public Boolean isUserNameAvailable(String userName) {
+        log.debug("UserName: {} will be checked if it's available!", userName);
+        return userRepository.existsByUsername(userName);
+    }
 
     /**
      * Validates that the user is not null.
@@ -42,7 +60,7 @@ public class UserServiceUtil {
      * @throws HttpBadRequestException If the username or password is empty.
      */
     public void validateUserNameAndPasswordNotEmpty(User user) {
-        if (StringUtils.isEmpty(user.getUserName()) || StringUtils.isEmpty(user.getPassword())) {
+        if (StringUtils.isEmpty(user.getUsername()) || StringUtils.isEmpty(user.getPassword())) {
             log.debug("Username and password are required.");
             throw new HttpBadRequestException("Username and password are required.");
         }
@@ -55,7 +73,7 @@ public class UserServiceUtil {
      * @throws HttpBadRequestException If the username is already taken.
      */
     public void validateUserNameNotTaken(String userName) {
-        if (Boolean.FALSE.equals(userService.isUserNameAvailable(userName))) {
+        if (Boolean.FALSE.equals(isUserNameAvailable(userName))) {
             log.debug("Username {} is already taken.", userName);
             throw new HttpBadRequestException("Username is already taken.");
         }
@@ -68,7 +86,7 @@ public class UserServiceUtil {
      * @throws HttpBadRequestException If the email is already registered.
      */
     public void validateEmailNotRegistered(String email) {
-        if (Boolean.FALSE.equals(userService.isEmailAvailable(email))) {
+        if (Boolean.FALSE.equals(isEmailAvailable(email))) {
             log.debug("Email {} is already registered.", email);
             throw new HttpBadRequestException("Email is already registered.");
         }

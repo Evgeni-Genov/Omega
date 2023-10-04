@@ -4,6 +4,8 @@ import com.example.omega.domain.enumeration.TransactionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+
+
 @Entity
 @Table
 @AllArgsConstructor
@@ -14,8 +16,8 @@ import lombok.*;
 public class TransactionStateHistory extends AbstractAuditingEntity{
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
+    @GeneratedValue(generator = "transaction_state_history_sequence_generator",strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "transaction_state_history_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 
     @Column
