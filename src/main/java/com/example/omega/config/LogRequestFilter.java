@@ -26,11 +26,11 @@ public class LogRequestFilter extends OncePerRequestFilter {
      * This method intercepts incoming and outgoing HTTP requests, logs relevant information,
      * and adds tracking information to the Mapped Diagnostic Context (MDC).
      *
-     * @param request  The incoming HTTP request.
-     * @param response The outgoing HTTP response.
+     * @param request     The incoming HTTP request.
+     * @param response    The outgoing HTTP response.
      * @param filterChain The filter chain for processing the request.
      * @throws ServletException If a servlet error occurs.
-     * @throws IOException If an I/O error occurs.
+     * @throws IOException      If an I/O error occurs.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request,

@@ -1,6 +1,5 @@
 package com.example.omega.config.security;
 
-import com.example.omega.config.security.jwt.AuthTokenFilter;
 import com.example.omega.service.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
