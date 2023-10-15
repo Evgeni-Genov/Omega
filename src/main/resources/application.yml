@@ -23,7 +23,7 @@ application:
 management:
   endpoints:
     web:
-      base-path: /actuator
+      base-path: /management
       exposure:
         include:
           [
@@ -34,3 +34,9 @@ management:
 global:
   exception-handling:
     debug-message: true
+
+omega:
+  app:
+    jwt-secret: bestSecretKeyEver
+    jwt-expiration-ms: 600000
+    jwt-refresh-expirations-ms: 60000

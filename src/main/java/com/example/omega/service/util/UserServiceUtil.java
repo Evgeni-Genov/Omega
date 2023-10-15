@@ -20,27 +20,6 @@ public class UserServiceUtil {
     private final UserRepository userRepository;
 
     /**
-     * Checks if the given email is available, meaning it is not already registered by another user.
-     *
-     * @param email The email address to check for availability.
-     * @return {@code true} if the email is available; {@code false} if it is already registered.
-     */
-    public Boolean isEmailAvailable(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
-    /**
-     * Checks if the given username is available, meaning it is not already taken by another user.
-     *
-     * @param userName The username to check for availability.
-     * @return {@code true} if the username is available; {@code false} if it is already taken.
-     */
-    public Boolean isUserNameAvailable(String userName) {
-        log.debug("UserName: {} will be checked if it's available!", userName);
-        return userRepository.existsByUsername(userName);
-    }
-
-    /**
      * Validates that the user is not null.
      *
      * @param user The user to be validated.
@@ -59,7 +38,7 @@ public class UserServiceUtil {
      * @param user The user to be validated.
      * @throws HttpBadRequestException If the username or password is empty.
      */
-    public void validateUserNameAndPasswordNotEmpty(User user) {
+    public void validateUsernameAndPasswordNotEmpty(User user) {
         if (StringUtils.isEmpty(user.getUsername()) || StringUtils.isEmpty(user.getPassword())) {
             log.debug("Username and password are required.");
             throw new HttpBadRequestException("Username and password are required.");
@@ -72,8 +51,8 @@ public class UserServiceUtil {
      * @param userName The username to be validated.
      * @throws HttpBadRequestException If the username is already taken.
      */
-    public void validateUserNameNotTaken(String userName) {
-        if (Boolean.FALSE.equals(isUserNameAvailable(userName))) {
+    public void validateUsernameNotTaken(String userName) {
+        if (Boolean.FALSE.equals(existsByUsername(userName))) {
             log.debug("Username {} is already taken.", userName);
             throw new HttpBadRequestException("Username is already taken.");
         }
@@ -86,10 +65,32 @@ public class UserServiceUtil {
      * @throws HttpBadRequestException If the email is already registered.
      */
     public void validateEmailNotRegistered(String email) {
-        if (Boolean.FALSE.equals(isEmailAvailable(email))) {
+        if (Boolean.FALSE.equals(existsByEmail(email))) {
             log.debug("Email {} is already registered.", email);
             throw new HttpBadRequestException("Email is already registered.");
         }
+    }
+
+    /**
+     * Checks if the given email is available, meaning it is not already registered by another user.
+     *
+     * @param email The email address to check for availability.
+     * @return {@code true} if the email is available; {@code false} if it is already registered.
+     */
+    public Boolean existsByEmail(String email) {
+        log.debug("Email: {} will be checked if it's already registered!", email);
+        return userRepository.existsByEmail(email);
+    }
+
+    /**
+     * Checks if the given username is available, meaning it is not already taken by another user.
+     *
+     * @param username The username to check for availability.
+     * @return {@code true} if the username is available; {@code false} if it is already taken.
+     */
+    public Boolean existsByUsername(String username) {
+        log.debug("UserName: {} will be checked if it's available!", username);
+        return userRepository.existsByUsername(username);
     }
 
     /**

@@ -3,12 +3,7 @@ package com.example.omega.domain;
 import com.example.omega.domain.enumeration.Roles;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -18,7 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class User extends AbstractAuditingEntity implements UserDetails {
+public class User extends AbstractAuditingEntity {
 
     @Id
     @GeneratedValue(generator = "user_sequence_generator", strategy = GenerationType.SEQUENCE)
@@ -80,59 +75,4 @@ public class User extends AbstractAuditingEntity implements UserDetails {
     @Column
     private Boolean twoFactorAuthentication;
 
-    public User(String firstName, String lastName, String username, String email,
-                String password, String nameTag, String phoneNumber, Boolean locked,
-                Boolean enabled, String address, String townOfBirth, String countryOfBirth,
-                List<AccountBalance> accountBalances, List<Transaction> outgoingTransactions,
-                List<Transaction> incomingTransactions, Roles role, boolean twoFactorAuthentication) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.nameTag = nameTag;
-        this.phoneNumber = phoneNumber;
-        this.locked = locked;
-        this.enabled = enabled;
-        this.address = address;
-        this.townOfBirth = townOfBirth;
-        this.countryOfBirth = countryOfBirth;
-        this.accountBalances = accountBalances;
-        this.outgoingTransactions = outgoingTransactions;
-        this.incomingTransactions = incomingTransactions;
-        this.role = role;
-        this.twoFactorAuthentication = twoFactorAuthentication;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        var authority =
-                new SimpleGrantedAuthority(role.name());
-        return Collections.singletonList(authority);
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return !locked;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
 }

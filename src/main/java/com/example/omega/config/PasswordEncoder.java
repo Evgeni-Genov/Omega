@@ -1,4 +1,4 @@
-package com.example.omega.security;
+package com.example.omega.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

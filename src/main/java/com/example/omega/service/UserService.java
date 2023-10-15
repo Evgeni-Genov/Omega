@@ -34,7 +34,7 @@ public class UserService {
      * Creates a new user.
      *
      * @param userCreateDTO The user to be created.
-     * @return The created user.
+     * @return userCreateDTO           The created user.
      * @throws HttpBadRequestException If the user is invalid or the username or email is already taken.
      */
     public UserCreateDTO createUser(UserCreateDTO userCreateDTO) {
@@ -42,8 +42,8 @@ public class UserService {
         var user = userMapper.toEntity(userCreateDTO);
 
         userServiceUtil.validateUserNotNull(user);
-        userServiceUtil.validateUserNameAndPasswordNotEmpty(user);
-        userServiceUtil.validateUserNameNotTaken(user.getUsername());
+        userServiceUtil.validateUsernameAndPasswordNotEmpty(user);
+        userServiceUtil.validateUsernameNotTaken(user.getUsername());
         userServiceUtil.validateEmailNotRegistered(user.getEmail());
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -57,12 +57,11 @@ public class UserService {
     /**
      * Retrieve a user by their unique user ID.
      *
-     * @param userId The ID of the user to retrieve.
-     * @return The UserDTO representing the user with the specified ID.
+     * @param userId                   The ID of the user to retrieve.
+     * @return userDTO                 The UserDTO representing the user with the specified ID.
      * @throws HttpBadRequestException If the provided userId is invalid or null
      *                                 or if the user with the specified ID is not found.
      */
-
     public UserDTO getUserById(Long userId) {
         log.debug("Request to get User by ID: {}", userId);
         return userMapper.toDTO(userServiceUtil.validateAndGetUser(userId));
@@ -75,7 +74,6 @@ public class UserService {
      * @throws HttpBadRequestException If the provided userId is invalid or null
      *                                 or if the user with the specified ID is not found.
      */
-
     public void deleteById(Long userId) {
         log.debug("Request to delete User by ID: {}", userId);
         userServiceUtil.validateAndGetUser(userId);
@@ -88,7 +86,6 @@ public class UserService {
      * @param userId The ID of the user whose roles are to be retrieved.
      * @return A list of roles associated with the user.
      */
-
     public Roles getRolesByUserId(Long userId) {
         log.debug("Request to get roles for User with ID: {}", userId);
         return userServiceUtil.validateAndGetUser(userId).getRole();
@@ -100,10 +97,9 @@ public class UserService {
      * @param pageable Pagination information to control the size and page of the result.
      * @return A page of UserDTOs containing user information.
      */
-
     public Page<UserDTO> getAllUsers(Pageable pageable) {
         log.debug("Request to get all Users");
-        return userRepository.findAll((org.springframework.data.domain.Pageable) pageable)
+        return userRepository.findAll(pageable)
                 .map(userMapper::toDTO);
     }
 
@@ -112,10 +108,9 @@ public class UserService {
      *
      * @param userId        The unique identifier of the user to be updated.
      * @param userUpdateDTO The DTO containing updated user information.
-     * @return The UserUpdateDTO       containing the updated user information.
+     * @return The UserUpdateDTO containing the updated user information.
      * @throws HttpBadRequestException If the provided userId is invalid or if the user is not found.
      */
-
     public UserUpdateDTO updateUserNonCredentialInformation(Long userId, UserUpdateDTO userUpdateDTO) {
         log.debug("Request to User: {}", userUpdateDTO);
         userServiceUtil.validateAndGetUser(userId);
@@ -127,10 +122,9 @@ public class UserService {
      * Retrieves a user based on their nameTag.
      *
      * @param nameTag The nameTag of the user to retrieve.
-     * @return UserSearchDTO           The User object with the specified nameTag.
+     * @return UserSearchDTO The User object with the specified nameTag.
      * @throws HttpBadRequestException If no user with the given nameTag is found.
      */
-
     public UserSearchDTO getUserByNameTag(String nameTag) {
         log.debug("Request to get user by nameTag: {}", nameTag);
         var user = userRepository.findByNameTag(nameTag);
@@ -149,7 +143,6 @@ public class UserService {
      * @return UserDTO                 The updated UserDTO with two-step verification enabled.
      * @throws HttpBadRequestException If the user with the provided ID is not found.
      */
-
     public UserCredentialUpdateDTO enableUserTwoStepVerification(Long userId) {
         log.debug("Request to enable two-step verification for User with ID: {}", userId);
         var user = userServiceUtil.validateAndGetUser(userId);
@@ -165,7 +158,6 @@ public class UserService {
      * @return UserDTO                 The updated UserDTO with two-step verification enabled.
      * @throws HttpBadRequestException If the user with the provided ID is not found.
      */
-
     public UserCredentialUpdateDTO disableUserTwoStepVerification(Long userId) {
         log.debug("Request to disable two-step verification for User with ID: {}", userId);
         var user = userServiceUtil.validateAndGetUser(userId);
@@ -184,7 +176,6 @@ public class UserService {
      * @throws HttpBadRequestException If the provided user ID is invalid, the old password is incorrect,
      *                                 or there is an issue with the password change process.
      */
-
     public UserCredentialUpdateDTO changePassword(Long userId, String oldPassword, String newPassword) {
         log.debug("Request to update password!");
         var user = userServiceUtil.validateAndGetUser(userId);
@@ -208,7 +199,6 @@ public class UserService {
      * @return UserCredentialUpdateDTO containing the updated user's information.
      * @throws HttpBadRequestException If the provided user ID is invalid or there is an issue with the email change process.
      */
-
     public UserCredentialUpdateDTO changeEmail(Long userId, String newEmail) {
         log.debug("Request to update email for user with ID: {}", userId);
         var user = userServiceUtil.validateAndGetUser(userId);
