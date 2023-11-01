@@ -17,8 +17,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
@@ -52,7 +50,7 @@ public class SecurityConfig {
                             .requestMatchers("/**").permitAll()
                             .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
                             .requestMatchers("/management/info").permitAll() // Permit unauthenticated access to /management/info.
-                            .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**","/v3/**").permitAll();
+                            .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll();
                 });
 //                .formLogin(withDefaults()) // Configure form-based login.
 //                .logout(logout -> logout.deleteCookies("remove")
@@ -83,7 +81,7 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/webjars/**",
                         "/v2/api-docs/**",
-                        "/swagger.json","/swagger-ui.html","/swagger-resources/**","/webjars/**",
+                        "/swagger.json", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**",
                         "/v3/api-docs/**");
     }
 

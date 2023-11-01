@@ -20,7 +20,7 @@ public class AbstractAuditingDTO {
     private Instant createdDate;
 
     @JsonIgnore
-    @JsonProperty(access =JsonProperty.Access.READ_ONLY)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String lastModifiedBy;
 
     @JsonIgnore

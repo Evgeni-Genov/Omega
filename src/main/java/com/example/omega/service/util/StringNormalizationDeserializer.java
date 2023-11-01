@@ -36,7 +36,7 @@ public class StringNormalizationDeserializer extends StdDeserializer<String> imp
     @Override
     public String deserialize(JsonParser stringToParse, DeserializationContext deserializationContext) throws IOException {
         var parsedValue = StringUtils.isNotBlank(stringToParse.getValueAsString()) ?
-            stringToParse.getValueAsString().trim() : stringToParse.getValueAsString();
+                stringToParse.getValueAsString().trim() : stringToParse.getValueAsString();
 
         if (StringUtils.isBlank(parsedValue)) {
             return null;

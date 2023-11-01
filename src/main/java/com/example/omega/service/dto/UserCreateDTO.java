@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class UserCreateDTO extends AbstractAuditingDTO{
+public class UserCreateDTO extends AbstractAuditingDTO {
 
     private Long id;
 

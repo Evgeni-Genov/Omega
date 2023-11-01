@@ -14,7 +14,7 @@ spring:
 logging:
   level:
     org:
-      springframework: info
+      springframework: DEBUG
 
 application:
   name: omega

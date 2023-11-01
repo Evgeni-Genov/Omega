@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class UserDTO extends AbstractAuditingDTO{
+public class UserDTO extends AbstractAuditingDTO {
 
     private Long id;
 

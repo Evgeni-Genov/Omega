@@ -37,7 +37,7 @@ public class NormalizeStringResolver implements HandlerMethodArgumentResolver {
             var parameterValue = webRequest.getParameter(parameterName.value());
 
             var parsedValue = StringUtils.isNotBlank(parameterValue) ?
-                parameterValue.trim() : parameterValue;
+                    parameterValue.trim() : parameterValue;
 
             if (StringUtils.isBlank(parsedValue)) {
                 return null;

@@ -9,7 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class UserSearchDTO extends AbstractAuditingDTO{
+public class UserSearchDTO extends AbstractAuditingDTO {
 
     private Long id;
 

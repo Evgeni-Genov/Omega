@@ -1,7 +1,6 @@
 package com.example.omega.service;
 
 import com.example.omega.domain.AccountBalance;
-import com.example.omega.domain.Transaction;
 import com.example.omega.domain.TransactionStateHistory;
 import com.example.omega.domain.enumeration.Currency;
 import com.example.omega.domain.enumeration.TransactionStatus;
@@ -52,7 +51,7 @@ public class TransactionService {
 
         if (senderBalance.getBalance().compareTo(transferAmount) < 0) {
             throw new HttpBadRequestException("Insufficient funds");
-            
+
         }
 
         senderBalance.setBalance(senderBalance.getBalance().subtract(transferAmount));
