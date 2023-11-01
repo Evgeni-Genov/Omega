@@ -1,5 +1,7 @@
 package com.example.omega.service.dto;
 
+import com.example.omega.service.util.StringNormalizationDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
@@ -9,14 +11,17 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class UserCreateDTO {
+public class UserCreateDTO extends AbstractAuditingDTO{
 
     private Long id;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String firstName;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String lastName;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String userName;
 
     @Pattern(
@@ -26,12 +31,16 @@ public class UserCreateDTO {
     private String password;
 
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\\\.[A-Za-z0-9-]+)*(\\\\.[A-Za-z]{2,})$")
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String email;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String address;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String townOfBirth;
 
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String countryOfBirth;
 
 }

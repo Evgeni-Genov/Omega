@@ -42,26 +42,25 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
-        http
-                .cors(withDefaults()) // Enable CORS with default settings.
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
+        http.csrf(AbstractHttpConfigurer::disable)
 
+//                .cors(withDefaults()) // Enable CORS with default settings.
+//                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
                 .authorizeHttpRequests(authorizeHttpRequests -> {
                     // Configure URL patterns and access control.
                     authorizeHttpRequests
+                            .requestMatchers("/**").permitAll()
                             .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
                             .requestMatchers("/management/info").permitAll() // Permit unauthenticated access to /management/info.
-                            .requestMatchers("/**").permitAll() // Permit unauthenticated access to other URLs.
-                            .requestMatchers("/**").hasRole("USER"); // Requires "USER" role for other URLs.
-                })
+                            .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**","/v3/**").permitAll();
+                });
+//                .formLogin(withDefaults()) // Configure form-based login.
+//                .logout(logout -> logout.deleteCookies("remove")
+//                        .invalidateHttpSession(false)
+//                        .logoutUrl("/logout")
+//                        .logoutSuccessUrl("/logout-success"));
 
-                .formLogin(withDefaults()) // Configure form-based login.
-                .logout(logout -> logout.deleteCookies("remove")
-                        .invalidateHttpSession(false)
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/logout-success"));
-
-        http.authenticationProvider(authenticationProvider()); // Set authentication provider.
+//        http.authenticationProvider(authenticationProvider()); // Set authentication provider.
 
         return http.build();
     }
@@ -73,7 +72,19 @@ public class SecurityConfig {
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring().requestMatchers("/js/**", "/images/**"); // Ignores certain URL patterns.
+        return web -> web
+                .ignoring()
+                .requestMatchers(
+                        "/js/**",
+                        "/images/**",
+                        "/v3/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/swagger-ui/**",
+                        "/webjars/**",
+                        "/v2/api-docs/**",
+                        "/swagger.json","/swagger-ui.html","/swagger-resources/**","/webjars/**",
+                        "/v3/api-docs/**");
     }
 
     /**

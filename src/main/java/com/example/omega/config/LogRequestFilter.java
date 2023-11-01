@@ -47,13 +47,11 @@ public class LogRequestFilter extends OncePerRequestFilter {
         var sb = new StringBuilder();
         sb.append("- request params: ");
 
-        request.getParameterMap().entrySet().forEach((entry) -> {
-            sb.append("[")
-                    .append(entry.getKey())
-                    .append("=")
-                    .append(entry.getValue()[0])
-                    .append("] ");
-        });
+        request.getParameterMap().forEach((key, value) -> sb.append("[")
+                .append(key)
+                .append("=")
+                .append(value[0])
+                .append("] "));
 
         if (shouldLog(request)) {
             log.info("Processing {} '{}' request {}", request.getMethod(), request.getRequestURI(), sb.length() > 19 ? sb.toString().trim() : "");
