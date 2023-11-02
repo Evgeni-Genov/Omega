@@ -44,14 +44,14 @@ public class SecurityConfig {
 
 //                .cors(withDefaults()) // Enable CORS with default settings.
 //                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
-                .authorizeHttpRequests(authorizeHttpRequests -> {
-                    // Configure URL patterns and access control.
-                    authorizeHttpRequests
-                            .requestMatchers("/**").permitAll()
-                            .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
-                            .requestMatchers("/management/info").permitAll() // Permit unauthenticated access to /management/info.
-                            .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll();
-                });
+            .authorizeHttpRequests(authorizeHttpRequests -> {
+                // Configure URL patterns and access control.
+                authorizeHttpRequests
+                    .requestMatchers("/**").permitAll()
+                    .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
+                    .requestMatchers("/management/info").permitAll() // Permit unauthenticated access to /management/info.
+                    .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll();
+            });
 //                .formLogin(withDefaults()) // Configure form-based login.
 //                .logout(logout -> logout.deleteCookies("remove")
 //                        .invalidateHttpSession(false)
@@ -71,18 +71,11 @@ public class SecurityConfig {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web
-                .ignoring()
-                .requestMatchers(
-                        "/js/**",
-                        "/images/**",
-                        "/v3/**",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/swagger-ui/**",
-                        "/webjars/**",
-                        "/v2/api-docs/**",
-                        "/swagger.json", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**",
-                        "/v3/api-docs/**");
+            .ignoring()
+            .requestMatchers(
+                "/js/**",
+                "/images/**",
+                "/swagger-ui/index.html");
     }
 
     /**
@@ -94,14 +87,14 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         var user = User.withUsername("user")
-                .password(bCryptPasswordEncoder.encode("user"))
-                .roles("USER")
-                .build();
+            .password(bCryptPasswordEncoder.encode("user"))
+            .roles("USER")
+            .build();
 
         var admin = User.withUsername("admin")
-                .password(bCryptPasswordEncoder.encode("admin"))
-                .roles("ADMIN")
-                .build();
+            .password(bCryptPasswordEncoder.encode("admin"))
+            .roles("ADMIN")
+            .build();
 
         return new InMemoryUserDetailsManager(user, admin);
     }

@@ -35,6 +35,17 @@ global:
   exception-handling:
     debug-message: true
 
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+    display-request-duration: true
+    doc-expansion: none
+    configUrl: /swagger-ui.html
+    path: /swagger-ui.html
+  api-docs:
+    path: /swagger-ui.html
+
+
 omega:
   app:
     jwt-secret: bestSecretKeyEver
