@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * AuthTokenFilter is responsible for processing JWT authentication tokens and setting the
@@ -24,13 +26,12 @@ import java.io.IOException;
  */
 @Slf4j
 @AllArgsConstructor
-@NoArgsConstructor
 @Component
 public class AuthTokenFilter extends OncePerRequestFilter {
 
-    private JwtUtils jwtUtils;
+    private final JwtUtils jwtUtils;
 
-    private UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
 
     /**
      * Processes the authentication token in the HTTP request and sets the user's authentication if valid.
@@ -43,10 +44,16 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        log.info("Authenticating request!");
         try {
-            var jwt = parseJwt(request);
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                var username = jwtUtils.getUsernameFromJwtToken(jwt);
+            var jwtAccessToken = parseJwtAccessToken(request);
+            if (jwtAccessToken == null) {
+                log.error("Missing access token. Rejecting!");
+                filterChain.doFilter(request, response);
+                return;
+            }
+            if (jwtUtils.validateJwtToken(jwtAccessToken)) {
+                var username = jwtUtils.getUsernameFromJwtToken(jwtAccessToken);
                 var userDetails = userDetailsService.loadUserByUsername(username);
                 var passwordAuthenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -54,11 +61,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 passwordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(passwordAuthenticationToken);
+
             }
         } catch (Exception e) {
             log.error("Cannot set user authentication: {}", e.getMessage());
         }
-
         filterChain.doFilter(request, response);
     }
 
@@ -68,13 +75,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @param request The HTTP request.
      * @return The JWT token if found in the header, or null if not found.
      */
-    private String parseJwt(HttpServletRequest request) {
-        var headerAuth = request.getHeader("AUTHORIZATION");
-
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("BEARER")) {
-            return headerAuth.substring(7);
+    private String parseJwtAccessToken(HttpServletRequest request) {
+        var authorizationHeader = request.getHeader("AUTHORIZATION");
+        if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer")) {
+            return authorizationHeader.substring(7);
         }
-
         return null;
     }
 }

@@ -17,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
@@ -37,32 +39,24 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
-//        http
-//                .cors(withDefaults()) // Enable CORS with default settings.
-//                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
-//                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests // Configure URL patterns and access control.
-//                        .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
-//                        .requestMatchers("/auth/**").permitAll()
-//                        .requestMatchers("/management/info").permitAll() // Permit unauthenticated access to /management/info.
-//                        .requestMatchers("/api/**").authenticated() // Permit unauthenticated access to /management/info.
-//                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll())
-//                .sessionManagement((session) -> session
-//                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
-//                .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
-//                .formLogin(withDefaults()) // Configure form-based login.
-//                .logout(logout -> logout.deleteCookies("remove")
-//                        .invalidateHttpSession(false)
-//                        .logoutUrl("/logout")
-//                        .logoutSuccessUrl("/logout-success"));
-//
-//        return http.build();
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeRequests()
-                .anyRequest().authenticated().and()
+                .cors(withDefaults()) // Enable CORS with default settings.
+                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
+                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests // Configure URL patterns and access control.
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
+                        .requestMatchers("/management/info").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll() // Permit unauthenticated access to /management/info.
+                        .requestMatchers("/api/**").authenticated()) // Permit unauthenticated access to /management/info.
                 .sessionManagement((session) -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
+                .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .formLogin(withDefaults())
+                .logout(logout -> logout.deleteCookies("remove")
+                        .invalidateHttpSession(false)
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/logout-success"));
+
         return http.build();
     }
 

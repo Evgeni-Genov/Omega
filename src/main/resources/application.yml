@@ -13,6 +13,9 @@ spring:
 
 logging:
   level:
+    com:
+      example:
+        omega: DEBUG
     org:
       springframework: DEBUG
 

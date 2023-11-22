@@ -61,7 +61,7 @@ public class UserResource {
     @GetMapping("/users")
     @Operation(summary = "Retrieve a page of all users.")
     public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable, Principal principal) {
-        var user = SecurityUtils.getCurrentUserLogin();
+        log.debug("User: {} is trying to read all users data!", principal.getName());
         var usersPage = userService.getAllUsers(pageable);
         return ResponseEntity.ok(usersPage);
     }
