@@ -6,7 +6,6 @@ import com.example.omega.config.security.payload.request.SignupRequest;
 import com.example.omega.config.security.payload.response.JwtResponse;
 import com.example.omega.config.security.payload.response.MessageResponse;
 import com.example.omega.domain.UserDetailsImpl;
-import com.example.omega.domain.enumeration.Roles;
 import com.example.omega.mapper.UserMapper;
 import com.example.omega.service.UserService;
 import lombok.AllArgsConstructor;

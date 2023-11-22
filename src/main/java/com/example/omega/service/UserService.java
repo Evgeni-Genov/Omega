@@ -209,8 +209,8 @@ public class UserService {
             changeEmail(userSecurityUpdateDTO);
         }
 
-        if (user.getTwoFactorAuthentication() != userSecurityUpdateDTO.isTwoFactorAuthentication()){
-            if (!user.getTwoFactorAuthentication()){
+        if (user.getTwoFactorAuthentication() != userSecurityUpdateDTO.isTwoFactorAuthentication()) {
+            if (!user.getTwoFactorAuthentication()) {
                 enableUserTwoStepVerification(userSecurityUpdateDTO.getId());
             } else {
                 disableUserTwoStepVerification(userSecurityUpdateDTO.getId());

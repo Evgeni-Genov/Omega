@@ -9,13 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Collection;
 
 @AllArgsConstructor
 @RestController
@@ -36,28 +32,28 @@ public class UserResource {
 
     @PatchMapping("/update/profile")
     @Operation(summary = "Update User non-credential information.")
-    public ResponseEntity<UserUpdateDTO> updateUserNonCredentialInformation(@RequestBody UserUpdateDTO userUpdateDTO){
+    public ResponseEntity<UserUpdateDTO> updateUserNonCredentialInformation(@RequestBody UserUpdateDTO userUpdateDTO) {
         var updatedUser = userService.partiallyUpdateUserNonCredentialInformation(userUpdateDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @PutMapping("/update/security")
     @Operation(summary = "Update User security data.")
-    public ResponseEntity<UserSecurityUpdateDTO> updateUserSecurityData(@RequestBody UserSecurityUpdateDTO userSecurityUpdateDTO){
+    public ResponseEntity<UserSecurityUpdateDTO> updateUserSecurityData(@RequestBody UserSecurityUpdateDTO userSecurityUpdateDTO) {
         var updatedUser = userService.updateUserSecurityData(userSecurityUpdateDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @PutMapping("/update/password")
     @Operation(summary = "Update User password.")
-    public ResponseEntity<UserPasswordChangeDTO> updateUserPassword(@RequestBody UserPasswordChangeDTO userPasswordChangeDTO){
+    public ResponseEntity<UserPasswordChangeDTO> updateUserPassword(@RequestBody UserPasswordChangeDTO userPasswordChangeDTO) {
         var updatedUser = userService.changePassword(userPasswordChangeDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @GetMapping("/user/{nameTag}")
     @Operation(summary = "Get user by nameTag.")
-    public ResponseEntity<UserSearchDTO> getUserByNameTag(@PathVariable String nameTag){
+    public ResponseEntity<UserSearchDTO> getUserByNameTag(@PathVariable String nameTag) {
         var user = userService.getUserByNameTag(nameTag);
         return ResponseEntity.ok().body(user);
     }

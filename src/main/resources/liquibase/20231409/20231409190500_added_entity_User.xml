@@ -20,7 +20,7 @@
             <column name="name_tag" type="varchar(255)" />
             <column name="phone_number" type="varchar(255)" />
             <column name="address" type="varchar(255)" />
-            <column name="role" type="varchar(255)" />
+            <column name="role" type="varchar(255)"/>
             <column name="town_of_birth" type="varchar(255)" />
             <column name="country_of_birth" type="varchar(255)" />
             <column name="two_factor_authentication" type="BOOLEAN" />
