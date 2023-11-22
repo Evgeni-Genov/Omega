@@ -22,7 +22,7 @@ public class UserCreateDTO extends AbstractAuditingDTO {
     private String lastName;
 
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
-    private String userName;
+    private String username;
 
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
@@ -42,5 +42,4 @@ public class UserCreateDTO extends AbstractAuditingDTO {
 
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String countryOfBirth;
-
 }

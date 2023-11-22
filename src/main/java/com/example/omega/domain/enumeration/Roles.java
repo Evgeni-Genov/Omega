@@ -6,6 +6,7 @@ package com.example.omega.domain.enumeration;
  * ROLE_SYSTEM - can only see the transaction and the
  *               reason for eventual failure of the transaction
  */
+//TODO
 public enum Roles {
-    ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM
+    ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM, ROLE_ANONYMOUS
 }

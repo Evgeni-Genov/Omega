@@ -15,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 
 @Slf4j
 @Service
@@ -48,6 +50,8 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
+        user.setRole(Roles.ROLE_USER);
+        user.setLocked(false);
 
         var savedUser = userRepository.save(user);
         log.debug("User created successfully: {}", user);
@@ -57,7 +61,7 @@ public class UserService {
     /**
      * Retrieve a user by their unique user ID.
      *
-     * @param userId                   The ID of the user to retrieve.
+     * @param userId The ID of the user to retrieve.
      * @return userDTO                 The UserDTO representing the user with the specified ID.
      * @throws HttpBadRequestException If the provided userId is invalid or null
      *                                 or if the user with the specified ID is not found.
@@ -81,17 +85,6 @@ public class UserService {
     }
 
     /**
-     * Retrieve the roles associated with a user by their user ID.
-     *
-     * @param userId The ID of the user whose roles are to be retrieved.
-     * @return A list of roles associated with the user.
-     */
-    public Roles getRolesByUserId(Long userId) {
-        log.debug("Request to get roles for User with ID: {}", userId);
-        return userServiceUtil.validateAndGetUser(userId).getRole();
-    }
-
-    /**
      * Retrieve a page of all users.
      *
      * @param pageable Pagination information to control the size and page of the result.
@@ -106,14 +99,14 @@ public class UserService {
     /**
      * Updates user information based on the provided UserUpdateDTO.
      *
-     * @param userId        The unique identifier of the user to be updated.
      * @param userUpdateDTO The DTO containing updated user information.
      * @return The UserUpdateDTO containing the updated user information.
      * @throws HttpBadRequestException If the provided userId is invalid or if the user is not found.
      */
-    public UserUpdateDTO updateUserNonCredentialInformation(Long userId, UserUpdateDTO userUpdateDTO) {
+    public UserUpdateDTO partiallyUpdateUserNonCredentialInformation(UserUpdateDTO userUpdateDTO) {
         log.debug("Request to User: {}", userUpdateDTO);
-        userServiceUtil.validateAndGetUser(userId);
+        var user = userServiceUtil.validateAndGetUser(userUpdateDTO.getId());
+        userServiceUtil.fieldsToBeUpdated(userUpdateDTO, user);
         userRepository.save(userMapper.toEntity(userUpdateDTO));
         return userUpdateDTO;
     }
@@ -140,84 +133,96 @@ public class UserService {
      * Enable two-step verification for a user.
      *
      * @param userId The ID of the user to enable two-step verification for.
-     * @return UserDTO                 The updated UserDTO with two-step verification enabled.
      * @throws HttpBadRequestException If the user with the provided ID is not found.
      */
-    public UserCredentialUpdateDTO enableUserTwoStepVerification(Long userId) {
+    public void enableUserTwoStepVerification(Long userId) {
         log.debug("Request to enable two-step verification for User with ID: {}", userId);
         var user = userServiceUtil.validateAndGetUser(userId);
         user.setTwoFactorAuthentication(true);
         userRepository.save(user);
-        return userMapper.toUserCredentialUpdateDTO(user);
+        userMapper.toUserCredentialUpdateDTO(user);
     }
 
     /**
      * Disable two-step verification for a user.
      *
      * @param userId The ID of the user to enable two-step verification for.
-     * @return UserDTO                 The updated UserDTO with two-step verification enabled.
      * @throws HttpBadRequestException If the user with the provided ID is not found.
      */
-    public UserCredentialUpdateDTO disableUserTwoStepVerification(Long userId) {
+    public void disableUserTwoStepVerification(Long userId) {
         log.debug("Request to disable two-step verification for User with ID: {}", userId);
         var user = userServiceUtil.validateAndGetUser(userId);
         user.setTwoFactorAuthentication(false);
         userRepository.save(user);
-        return userMapper.toUserCredentialUpdateDTO(user);
+        userMapper.toUserCredentialUpdateDTO(user);
     }
 
     /**
-     * Change the password for a user identified by their user ID.
+     * Change the password for a user identified by their user ID. We receive a userPasswordChangeDTO,
+     * so we can get the id, the old and the new password.
      *
-     * @param userId      The ID of the user whose password needs to be changed.
-     * @param oldPassword The old password for verification.
-     * @param newPassword The new password to set.
+     * @param userPasswordChangeDTO The UserPasswordChangeDTO.
      * @return True                    If the password change was successful, false otherwise.
      * @throws HttpBadRequestException If the provided user ID is invalid, the old password is incorrect,
      *                                 or there is an issue with the password change process.
      */
-    public UserCredentialUpdateDTO changePassword(Long userId, String oldPassword, String newPassword) {
+    //TODO: logout user after password change, change token.
+    public UserPasswordChangeDTO changePassword(UserPasswordChangeDTO userPasswordChangeDTO) {
         log.debug("Request to update password!");
-        var user = userServiceUtil.validateAndGetUser(userId);
+        var user = userServiceUtil.validateAndGetUser(userPasswordChangeDTO.getId());
 
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+        if (!passwordEncoder.matches(userPasswordChangeDTO.getOldPassword(), user.getPassword())) {
             throw new HttpBadRequestException("Passwords don't match!");
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        if (passwordEncoder.matches(userPasswordChangeDTO.getOldPassword(), userPasswordChangeDTO.getNewPassword())) {
+            throw new HttpBadRequestException("New Password can't be like the old one!");
+        }
+
+        user.setPassword(passwordEncoder.encode(userPasswordChangeDTO.getNewPassword()));
         userRepository.save(user);
 
         log.debug("Password update was successful!");
-        return userMapper.toUserCredentialUpdateDTO(user);
+        return userMapper.toUserPasswordChangeDTO(user);
     }
 
     /**
      * Change the email address for a user identified by their user ID.
      *
-     * @param userId   The ID of the user whose email needs to be changed.
-     * @param newEmail The new email address to set.
+     * @param userSecurityUpdateDTO The UserCredentialUpdateDTO.
      * @return UserCredentialUpdateDTO containing the updated user's information.
      * @throws HttpBadRequestException If the provided user ID is invalid or there is an issue with the email change process.
      */
-    public UserCredentialUpdateDTO changeEmail(Long userId, String newEmail) {
-        log.debug("Request to update email for user with ID: {}", userId);
-        var user = userServiceUtil.validateAndGetUser(userId);
-        userServiceUtil.validateEmailNotRegistered(newEmail);
-        user.setEmail(newEmail);
+    public UserSecurityUpdateDTO changeEmail(UserSecurityUpdateDTO userSecurityUpdateDTO) {
+        log.debug("Request to update email for user with ID: {}", userSecurityUpdateDTO.getId());
+        var user = userServiceUtil.validateAndGetUser(userSecurityUpdateDTO.getId());
+        userServiceUtil.validateEmailNotRegistered(userSecurityUpdateDTO.getEmail());
+        user.setEmail(userSecurityUpdateDTO.getEmail());
         userRepository.save(user);
         return userMapper.toUserCredentialUpdateDTO(user);
     }
 
-    //! methods involving 2FA, password change and email change should be called here?
+    public UserSecurityUpdateDTO updateUserSecurityData(UserSecurityUpdateDTO userSecurityUpdateDTO) {
+        var user = userServiceUtil.validateAndGetUser(userSecurityUpdateDTO.getId());
 
-    public UserCredentialUpdateDTO updateUserCredentials(User user) {
-        return null;
+        if (Boolean.TRUE.equals(userServiceUtil.shouldUpdateEmail(user.getEmail(), userSecurityUpdateDTO.getEmail()))) {
+            changeEmail(userSecurityUpdateDTO);
+        }
+
+        if (user.getTwoFactorAuthentication() != userSecurityUpdateDTO.isTwoFactorAuthentication()){
+            if (!user.getTwoFactorAuthentication()){
+                enableUserTwoStepVerification(userSecurityUpdateDTO.getId());
+            } else {
+                disableUserTwoStepVerification(userSecurityUpdateDTO.getId());
+            }
+        }
+
+        return userSecurityUpdateDTO;
     }
 
-    //TODO: implement
-
-    public User authenticateUserByEmail(String email, String password) {
-        return null;
+    @Transactional(readOnly = true)
+    public Optional<User> getUserWithAuthoritiesByLogin(String username) {
+        return userRepository.findOneWithAuthoritiesByUsername(username);
     }
 
 }

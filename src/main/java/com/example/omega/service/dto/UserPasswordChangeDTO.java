@@ -1,29 +1,16 @@
 package com.example.omega.service.dto;
 
-import com.example.omega.service.util.StringNormalizationDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-/**
- * DTO used for the update of user sensitive data.
- */
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class UserCredentialUpdateDTO extends AbstractAuditingDTO {
+public class UserPasswordChangeDTO {
 
     private Long id;
-
-    @JsonDeserialize(using = StringNormalizationDeserializer.class)
-    private String email;
-
-    @JsonDeserialize(using = StringNormalizationDeserializer.class)
-    private String userName;
-
-    private boolean twoFactorAuthentication;
 
     private String oldPassword;
 

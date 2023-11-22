@@ -20,6 +20,16 @@ application:
   name: omega
   version: 1.0.0-SNAPSHOT
 
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+    display-request-duration: true
+    doc-expansion: none
+    configUrl: /swagger-ui.html
+    path: /swagger-ui.html
+  api-docs:
+    path: /swagger-ui.html
+
 management:
   endpoints:
     web:

@@ -10,7 +10,7 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI OmegaOpenApi() {
-        var info = new Info().title("test").version("1.0");
+        var info = new Info().title("OMEGA").version("1.0");
         return new OpenAPI().info(info);
     }
 }

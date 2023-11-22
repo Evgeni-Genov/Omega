@@ -17,7 +17,11 @@
                 <constraints nullable="false" />
             </column>
             <column name="currency" type="varchar(255)" />
+            <column name="description" type="varchar(255)" />
+            <column name="transaction_status" type="varchar(255)" />
+            <column name="transaction_type" type="varchar(255)" />
             <column name="balance" type="NUMERIC" />
+            <column name="amount" type="NUMERIC" />
 
             <!-- Auditing columns -->
             <column name="created_by" type="varchar(255)" />

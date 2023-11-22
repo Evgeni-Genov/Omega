@@ -28,12 +28,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         converters.add(new StringHttpMessageConverter());
         converters.add(new ByteArrayHttpMessageConverter());
+        converters.add(createJsonHttpMessageConverter());
     }
 
     private HttpMessageConverter<Object> createJsonHttpMessageConverter() {
         var jsonConverter = new MappingJackson2HttpMessageConverter();
         jsonConverter.setPrettyPrint(true);
-
         return jsonConverter;
     }
 

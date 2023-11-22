@@ -1,10 +1,11 @@
 package com.example.omega.mapper;
 
+import com.example.omega.config.security.payload.request.SignupRequest;
 import com.example.omega.domain.User;
 import com.example.omega.service.dto.*;
 import org.mapstruct.Mapper;
 
-
+//TODO: possible errors converting from one object to another(fields that are not updated will be null)
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
@@ -14,9 +15,11 @@ public interface UserMapper {
 
     UserUpdateDTO toUpdateDTO(User user);
 
-    UserCredentialUpdateDTO toUserCredentialUpdateDTO(User user);
+    UserSecurityUpdateDTO toUserCredentialUpdateDTO(User user);
 
     UserSearchDTO toUserSearchDTO(User user);
+
+    UserPasswordChangeDTO toUserPasswordChangeDTO(User user);
 
     User toEntity(UserDTO userDTO);
 
@@ -24,7 +27,12 @@ public interface UserMapper {
 
     User toEntity(UserUpdateDTO userUpdateDTO);
 
-    User toEntity(UserCredentialUpdateDTO userCredentialUpdateDTO);
+    User toEntity(UserSecurityUpdateDTO userSecurityUpdateDTO);
 
     User toEntity(UserSearchDTO userSearchDTO);
+
+    User toEntity(UserPasswordChangeDTO userPasswordChangeDTO);
+
+    User toUserAuth(SignupRequest request);
+
 }

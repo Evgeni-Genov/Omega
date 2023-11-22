@@ -2,6 +2,7 @@ package com.example.omega.service.util;
 
 import com.example.omega.domain.User;
 import com.example.omega.repository.UserRepository;
+import com.example.omega.service.dto.UserUpdateDTO;
 import com.example.omega.service.exception.HttpBadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,12 +49,12 @@ public class UserServiceUtil {
     /**
      * Validates that the username is not already taken.
      *
-     * @param userName The username to be validated.
+     * @param username The username to be validated.
      * @throws HttpBadRequestException If the username is already taken.
      */
-    public void validateUsernameNotTaken(String userName) {
-        if (Boolean.FALSE.equals(existsByUsername(userName))) {
-            log.debug("Username {} is already taken.", userName);
+    public void validateUsernameNotTaken(String username) {
+        if (Boolean.TRUE.equals(existsByUsername(username))) {
+            log.debug("Username {} is already taken.", username);
             throw new HttpBadRequestException("Username is already taken.");
         }
     }
@@ -65,7 +66,7 @@ public class UserServiceUtil {
      * @throws HttpBadRequestException If the email is already registered.
      */
     public void validateEmailNotRegistered(String email) {
-        if (Boolean.FALSE.equals(existsByEmail(email))) {
+        if (email != null && Boolean.TRUE.equals(existsByEmail(email))) {
             log.debug("Email {} is already registered.", email);
             throw new HttpBadRequestException("Email is already registered.");
         }
@@ -130,5 +131,49 @@ public class UserServiceUtil {
         }
 
         return optionalUser.get();
+    }
+
+    /**
+     * Determines whether an email address should be updated based on a comparison between the existing email and the new email.
+     *
+     * @param existingEmail The existing email address to compare.
+     * @param newEmail      The new email address to compare.
+     * @return {@code true} if the existing and new email addresses are different and should be updated,
+     * {@code false} if they are the same and should not be updated.
+     */
+    public Boolean shouldUpdateEmail(String existingEmail, String newEmail) {
+        log.debug("Comparing the existing and the new email!");
+        return !existingEmail.equalsIgnoreCase(newEmail);
+    }
+
+    /**
+     * Update user entity fields based on the provided UserUpdateDTO. Only non-null fields in the UserUpdateDTO
+     * will be applied to the user entity.
+     *
+     * @param userUpdateDTO The UserUpdateDTO containing fields to update.
+     * @param user          The User entity to be updated.
+     */
+    public void fieldsToBeUpdated(UserUpdateDTO userUpdateDTO, User user) {
+        if (userUpdateDTO.getFirstName() != null) {
+            user.setFirstName(userUpdateDTO.getFirstName());
+        }
+        if (userUpdateDTO.getLastName() != null) {
+            user.setLastName(userUpdateDTO.getLastName());
+        }
+        if (userUpdateDTO.getPhoneNumber() != null) {
+            user.setPhoneNumber(userUpdateDTO.getPhoneNumber());
+        }
+        if (userUpdateDTO.getAddress() != null) {
+            user.setAddress(userUpdateDTO.getAddress());
+        }
+        if (userUpdateDTO.getTownOfBirth() != null) {
+            user.setTownOfBirth(userUpdateDTO.getTownOfBirth());
+        }
+        if (userUpdateDTO.getCountryOfBirth() != null) {
+            user.setCountryOfBirth(userUpdateDTO.getCountryOfBirth());
+        }
+        if (userUpdateDTO.getNameTag() != null) {
+            user.setNameTag(userUpdateDTO.getNameTag());
+        }
     }
 }

@@ -57,7 +57,7 @@ public class User extends AbstractAuditingEntity {
     private String countryOfBirth;
 
     @Column
-    @OneToMany
+    @OneToMany(mappedBy = "user")
     private List<AccountBalance> accountBalances;
 
     @Column
@@ -74,5 +74,9 @@ public class User extends AbstractAuditingEntity {
 
     @Column
     private Boolean twoFactorAuthentication;
+
+//    @Column
+//    @JoinColumn(unique = true)
+//    private UserDetailsImpl userDetails;
 
 }

@@ -9,7 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-
 public class JwtResponse {
 
     private String token;

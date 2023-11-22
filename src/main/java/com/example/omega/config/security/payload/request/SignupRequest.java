@@ -24,6 +24,4 @@ public class SignupRequest {
     @NotNull
     private String password;
 
-    private List<String> roles;
-
 }
