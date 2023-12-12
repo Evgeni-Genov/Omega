@@ -6,11 +6,7 @@ import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.dto.*;
 import com.example.omega.service.exception.HttpBadRequestException;
-import com.example.omega.service.util.SecurityUtils;
 import com.example.omega.service.util.UserServiceUtil;
-
-import java.util.Objects;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.Optional;
 
 
@@ -124,7 +121,6 @@ public class UserService {
         userServiceUtil.fieldsToBeUpdated(userUpdateDTO, user);
         var updatedUser = userMapper.toEntity(userUpdateDTO);
         //TODO: maybe use currentLoggedInUser -> there could be a mismatch
-        updatedUser.setLastModifiedBy(user.getUsername());
         userRepository.save(updatedUser);
         return userUpdateDTO;
     }
