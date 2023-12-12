@@ -5,6 +5,7 @@ import com.example.omega.service.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -48,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/management/info").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll() // Permit unauthenticated access to /management/info.
                         .requestMatchers("/api/**").authenticated()) // Permit unauthenticated access to /management/info.
-                .sessionManagement((session) -> session
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
                 .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(withDefaults())
@@ -69,6 +70,7 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web
                 .ignoring()
+                .requestMatchers(HttpMethod.OPTIONS, "/**")
                 .requestMatchers(
                         "/js/**",
                         "/images/**",
@@ -106,16 +108,4 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
         return authConfiguration.getAuthenticationManager();
     }
-
-//    /**
-//     * Defines a JWT token filter for authentication.
-//     *
-//     * @return An AuthTokenFilter instance.
-//     */
-//    @Bean
-//    public AuthTokenFilter authenticationJwtTokenFilter() {
-//        return new AuthTokenFilter();
-//    }
-
-
 }

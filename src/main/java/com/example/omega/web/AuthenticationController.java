@@ -66,7 +66,6 @@ public class AuthenticationController {
         var user = userMapper.toUserAuth(signUpRequest);
         userService.createUser(userMapper.toCreateDTO(user));
         return ResponseEntity.ok(new MessageResponse("SUCCESSFUL_REGISTRATION"));
-
     }
 
 }

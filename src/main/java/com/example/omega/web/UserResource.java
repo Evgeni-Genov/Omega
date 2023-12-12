@@ -23,30 +23,29 @@ public class UserResource {
 
     private final SecurityUtils securityUtils;
 
-    @PostMapping("/register")
-    @Operation(summary = "Register User.")
-    public ResponseEntity<UserCreateDTO> createUser(@RequestBody UserCreateDTO userCreateDTO) {
-        var createdUser = userService.createUser(userCreateDTO);
-        return ResponseEntity.ok().body(createdUser);
-    }
+    //TODO: deleting done by ROLE_ADMIN, ROLE_USER if the it's his own profile, add an additional check if the user has money over 0, to be sure the user wont lose money
+    //TODO: company getting the deleted money??
 
     @PatchMapping("/update/profile")
     @Operation(summary = "Update User non-credential information.")
-    public ResponseEntity<UserUpdateDTO> updateUserNonCredentialInformation(@RequestBody UserUpdateDTO userUpdateDTO) {
+    public ResponseEntity<UserUpdateDTO> updateUserNonCredentialInformation(Principal principal, @RequestBody UserUpdateDTO userUpdateDTO) {
+        securityUtils.canCurrentUserEditThisData(principal, userUpdateDTO.getId());
         var updatedUser = userService.partiallyUpdateUserNonCredentialInformation(userUpdateDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @PutMapping("/update/security")
     @Operation(summary = "Update User security data.")
-    public ResponseEntity<UserSecurityUpdateDTO> updateUserSecurityData(@RequestBody UserSecurityUpdateDTO userSecurityUpdateDTO) {
+    public ResponseEntity<UserSecurityUpdateDTO> updateUserSecurityData(Principal principal, @RequestBody UserSecurityUpdateDTO userSecurityUpdateDTO) {
+        securityUtils.canCurrentUserEditThisData(principal, userSecurityUpdateDTO.getId());
         var updatedUser = userService.updateUserSecurityData(userSecurityUpdateDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @PutMapping("/update/password")
     @Operation(summary = "Update User password.")
-    public ResponseEntity<UserPasswordChangeDTO> updateUserPassword(@RequestBody UserPasswordChangeDTO userPasswordChangeDTO) {
+    public ResponseEntity<UserPasswordChangeDTO> updateUserPassword(Principal principal, @RequestBody UserPasswordChangeDTO userPasswordChangeDTO) {
+        securityUtils.canCurrentUserEditThisData(principal, userPasswordChangeDTO.getId());
         var updatedUser = userService.changePassword(userPasswordChangeDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
@@ -68,7 +67,8 @@ public class UserResource {
 
     @DeleteMapping("/users/{userId}")
     @Operation(summary = "Delete a user by their unique user ID.")
-    public ResponseEntity<Void> deleteUserById(@PathVariable Long userId) {
+    public ResponseEntity<Void> deleteUserById(Principal principal, @PathVariable Long userId) {
+        securityUtils.canCurrentUserEditThisData(principal, userId);
         userService.deleteById(userId);
         return ResponseEntity.noContent().build();
     }

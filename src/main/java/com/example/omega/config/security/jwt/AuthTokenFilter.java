@@ -7,10 +7,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -18,7 +16,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * AuthTokenFilter is responsible for processing JWT authentication tokens and setting the
@@ -47,12 +44,12 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         log.info("Authenticating request!");
         try {
             var jwtAccessToken = parseJwtAccessToken(request);
-            if (jwtAccessToken == null) {
+            if (jwtAccessToken == null && !isSignUpRequest(request)) {
                 log.error("Missing access token. Rejecting!");
                 filterChain.doFilter(request, response);
                 return;
             }
-            if (jwtUtils.validateJwtToken(jwtAccessToken)) {
+            if (jwtUtils.validateJwtToken(jwtAccessToken) && !isSignUpRequest(request)) {
                 var username = jwtUtils.getUsernameFromJwtToken(jwtAccessToken);
                 var userDetails = userDetailsService.loadUserByUsername(username);
                 var passwordAuthenticationToken =
@@ -61,7 +58,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 passwordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(passwordAuthenticationToken);
-
             }
         } catch (Exception e) {
             log.error("Cannot set user authentication: {}", e.getMessage());
@@ -81,6 +77,16 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             return authorizationHeader.substring(7);
         }
         return null;
+    }
+
+    /**
+     * Checks if the given HTTP request corresponds to a sign-in request.
+     *
+     * @param request The HTTPServletRequest object representing the current request.
+     * @return {@code true} if the request is a sign-in request, {@code false} otherwise.
+     */
+    private boolean isSignUpRequest(HttpServletRequest request) {
+        return request.getRequestURI().endsWith("/auth/signup") && request.getMethod().equals("POST");
     }
 }
 

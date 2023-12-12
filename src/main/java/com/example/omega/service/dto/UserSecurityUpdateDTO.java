@@ -19,5 +19,5 @@ public class UserSecurityUpdateDTO extends AbstractAuditingDTO {
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String email;
 
-    private boolean twoFactorAuthentication;
+    private Boolean twoFactorAuthentication;
 }

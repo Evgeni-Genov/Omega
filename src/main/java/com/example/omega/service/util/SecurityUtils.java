@@ -1,6 +1,9 @@
 package com.example.omega.service.util;
 
 import com.example.omega.domain.enumeration.Roles;
+import com.example.omega.service.UserService;
+import com.example.omega.service.exception.HttpBadRequestException;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,12 +13,16 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
+import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
+@AllArgsConstructor
 public class SecurityUtils {
+
+    private final UserService userService;
 
     private static final String EMAIL_CLAIM = "unique_name";
     private static final String ROLES_CLAIM = "roles";
@@ -116,21 +123,35 @@ public class SecurityUtils {
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
-//TODO
-//    public void canCurrentUserEditDTO(Principal principal, Long userId, String entityName) {
-//        Long currentUserId = extractCurrentUserIdFromPrincipal(principal, entityName);
-//        boolean isUserAuthenticated = userId.equals(currentUserId) || isCurrentUserInRole(Roles.ROLE_ADMIN);
-//        if (!isUserAuthenticated) {
-//            throw new HttpBadRequestException(String.format("You do not have permission to update this %s!", entityName));
-//        }
-//    }
 
-//    private Long extractCurrentUserIdFromPrincipal(Principal principal, String entityName) {
-//        var currentUserLogin = principal.getName();
-//        var currentUser = userService.getUserWithAuthoritiesByLogin(currentUserLogin);
-//        if (!currentUser.isPresent()) {
-//            throw new HttpBadRequestException("No user is present");
-//        }
-//        return currentUser.get().getId();
-//    }
+    /**
+     * If the current user has a specific authority (security role).
+     * The name of this method comes from the {@code isUserInRole()} method in the Servlet API.
+     *
+     * @param authority the authority to check.
+     * @return true if the current user has the authority, false otherwise.
+     */
+    public static boolean isCurrentUserInRole(String authority) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null &&
+                getAuthorities(authentication)
+                        .anyMatch(authority::equals);
+    }
+
+    public void canCurrentUserEditThisData(Principal principal, Long userId) {
+        var currentUserId = extractCurrentUserIdFromPrincipal(principal);
+        boolean isUserAuthenticated = userId.equals(currentUserId) || isCurrentUserInRole(Roles.ROLE_ADMIN.name());
+        if (!isUserAuthenticated) {
+            throw new HttpBadRequestException("You do not have permission to update this Entity!");
+        }
+    }
+
+    public Long extractCurrentUserIdFromPrincipal(Principal principal) {
+        var currentUserLogin = principal.getName();
+        var currentUser = userService.getUserWithAuthoritiesByLogin(currentUserLogin);
+        if (currentUser.isEmpty()) {
+            throw new HttpBadRequestException("No user is present!");
+        }
+        return currentUser.get().getId();
+    }
 }

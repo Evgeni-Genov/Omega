@@ -11,7 +11,6 @@ import com.example.omega.repository.TransactionStateHistoryRepository;
 import com.example.omega.service.dto.TransactionDTO;
 import com.example.omega.service.dto.UserDTO;
 import com.example.omega.service.exception.HttpBadRequestException;
-import com.example.omega.service.util.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @AllArgsConstructor
 public class TransactionService {
+
+    //TODO: check Activities in ARTool: history
 
     private final UserService userService;
 
@@ -39,7 +40,7 @@ public class TransactionService {
      */
     public TransactionDTO saveTransaction(TransactionDTO transactionDTO) {
         var transaction = transactionMapper.toEntity(transactionDTO);
-        var currentUser = SecurityUtils.getCurrentUserLogin();
+//        transaction.setSender(currentUser);
         return transactionMapper.toDTO(transactionRepository.save(transaction));
     }
 

@@ -17,7 +17,7 @@ public class AbstractAuditingDTO {
 
     @JsonIgnore
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Instant createdDate;
+    private Instant createdDate = Instant.now();
 
     @JsonIgnore
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -25,5 +25,5 @@ public class AbstractAuditingDTO {
 
     @JsonIgnore
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Instant lastModifiedDate;
+    private Instant lastModifiedDate = Instant.now();
 }

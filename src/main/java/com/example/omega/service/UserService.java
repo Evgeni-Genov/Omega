@@ -6,7 +6,11 @@ import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.dto.*;
 import com.example.omega.service.exception.HttpBadRequestException;
+import com.example.omega.service.util.SecurityUtils;
 import com.example.omega.service.util.UserServiceUtil;
+
+import java.util.Objects;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -106,8 +110,22 @@ public class UserService {
     public UserUpdateDTO partiallyUpdateUserNonCredentialInformation(UserUpdateDTO userUpdateDTO) {
         log.debug("Request to User: {}", userUpdateDTO);
         var user = userServiceUtil.validateAndGetUser(userUpdateDTO.getId());
+//        use
+//        return userRepository
+//                .findById(userUpdateDTO.getId())
+//                .map(existingUser -> {
+//                    userMapper.partialUpdate(existingUser, userUpdateDTO);
+//                    return existingUser;
+//                })
+//                .map(userRepository::save)
+//                .map(userMapper::toUpdateDTO);
+
+        
         userServiceUtil.fieldsToBeUpdated(userUpdateDTO, user);
-        userRepository.save(userMapper.toEntity(userUpdateDTO));
+        var updatedUser = userMapper.toEntity(userUpdateDTO);
+        //TODO: maybe use currentLoggedInUser -> there could be a mismatch
+        updatedUser.setLastModifiedBy(user.getUsername());
+        userRepository.save(updatedUser);
         return userUpdateDTO;
     }
 
@@ -209,8 +227,8 @@ public class UserService {
             changeEmail(userSecurityUpdateDTO);
         }
 
-        if (user.getTwoFactorAuthentication() != userSecurityUpdateDTO.isTwoFactorAuthentication()) {
-            if (!user.getTwoFactorAuthentication()) {
+        if (!Objects.equals(user.getTwoFactorAuthentication(), userSecurityUpdateDTO.getTwoFactorAuthentication())) {
+            if (Boolean.FALSE.equals(user.getTwoFactorAuthentication())) {
                 enableUserTwoStepVerification(userSecurityUpdateDTO.getId());
             } else {
                 disableUserTwoStepVerification(userSecurityUpdateDTO.getId());
