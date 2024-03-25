@@ -2,6 +2,7 @@ package com.example.omega.domain;
 
 import com.example.omega.domain.enumeration.Roles;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class User extends AbstractAuditingEntity {
     private String username;
 
     @Column
+    @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String email;
 
     @Column
@@ -39,6 +41,7 @@ public class User extends AbstractAuditingEntity {
     private String nameTag;
 
     @Column
+    @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
     private String phoneNumber;
 
     @Column

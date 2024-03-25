@@ -3,7 +3,7 @@ package com.example.omega.service.util;
 import com.example.omega.OmegaApplication;
 import com.example.omega.domain.User;
 import com.example.omega.repository.UserRepository;
-import com.example.omega.service.exception.HttpBadRequestException;
+import com.example.omega.service.exception.BadRequestException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,7 +89,7 @@ class UserServiceUtilTest {
 
     @Test
     void testValidateUserNotNull_WhenUserIsNull() {
-        var exception = Assertions.assertThrows(HttpBadRequestException.class, () -> userServiceUtil.validateUserNotNull(null));
+        var exception = Assertions.assertThrows(BadRequestException.class, () -> userServiceUtil.validateUserNotNull(null));
         Assertions.assertNotNull(exception);
     }
 
@@ -112,7 +112,7 @@ class UserServiceUtilTest {
         user.setPassword("password");
 
         // Act & Assert (HttpBadRequestException should be thrown)
-        var exception = Assertions.assertThrows(HttpBadRequestException.class, () -> userServiceUtil.validateUsernameAndPasswordNotEmpty(user));
+        var exception = Assertions.assertThrows(BadRequestException.class, () -> userServiceUtil.validateUsernameAndPasswordNotEmpty(user));
         Assertions.assertNotNull(exception);
     }
 
@@ -122,7 +122,7 @@ class UserServiceUtilTest {
         user.setUsername("username");
         user.setPassword("");
 
-        var exception = Assertions.assertThrows(HttpBadRequestException.class, () -> userServiceUtil.validateUsernameAndPasswordNotEmpty(user));
+        var exception = Assertions.assertThrows(BadRequestException.class, () -> userServiceUtil.validateUsernameAndPasswordNotEmpty(user));
         Assertions.assertNotNull(exception);
     }
 

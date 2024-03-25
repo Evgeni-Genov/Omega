@@ -10,7 +10,7 @@ import com.example.omega.repository.TransactionRepository;
 import com.example.omega.repository.TransactionStateHistoryRepository;
 import com.example.omega.service.dto.TransactionDTO;
 import com.example.omega.service.dto.UserDTO;
-import com.example.omega.service.exception.HttpBadRequestException;
+import com.example.omega.service.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class TransactionService {
         var transferAmount = transactionDTO.getAmount();
 
         if (senderBalance.getBalance().compareTo(transferAmount) < 0) {
-            throw new HttpBadRequestException("Insufficient funds");
+            throw new BadRequestException("Insufficient funds");
 
         }
 
@@ -82,7 +82,7 @@ public class TransactionService {
                 .stream()
                 .filter(balance -> balance.getCurrency() == currency)
                 .findFirst()
-                .orElseThrow(() -> new HttpBadRequestException("Account balance not found"));
+                .orElseThrow(() -> new BadRequestException("Account balance not found"));
     }
 
 }
