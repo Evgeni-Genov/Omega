@@ -15,11 +15,11 @@ public class OpenApiConfig {
         var info = new Info().title("OMEGA").version("1.0");
         return new OpenAPI().info(info).components(new Components()
                 .addSecuritySchemes("BearerTokenAuthentication",
-                new SecurityScheme()
-                        .name("Authentication for 'api' APIs")
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("JWT")
-        ));
+                        new SecurityScheme()
+                                .name("Authentication for 'api' APIs")
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                ));
     }
 }
