@@ -46,7 +46,7 @@ public class MailService {
 
             emailSender.send(message);
             log.debug("Sent email to {}", recipient);
-        } catch (MessagingException e){
+        } catch (MessagingException e) {
             throw new BadRequestException(e.getMessage());
         }
     }

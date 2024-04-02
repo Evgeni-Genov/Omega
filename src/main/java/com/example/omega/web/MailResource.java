@@ -27,13 +27,12 @@ public class MailResource {
     public void sendEmail(@RequestBody String email) {
         var user = userService.getUserByEmail(email);
 
-        if (user.isEmpty()){
+        if (user.isEmpty()) {
             throw new BadRequestException(String.format("User with email %s doesn't exist", email));
         }
 
         mailService.sendVerificationCodeEmail(email.trim(), user);
     }
-
 
 
 }

@@ -241,7 +241,7 @@ public class UserService {
      * @throws BadRequestException if the user is not found.
      */
     public String returnSavedVerificationCode(Optional<User> optionalUser) {
-        if (optionalUser.isEmpty()){
+        if (optionalUser.isEmpty()) {
             throw new BadRequestException("User not found!");
         }
         var user = optionalUser.get();
