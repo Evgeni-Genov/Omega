@@ -1,5 +1,6 @@
-package com.example.omega.service.google2Fa;
+package com.example.omega.web;
 
+import com.example.omega.service.GoogleAuthenticatorService;
 import com.google.zxing.WriterException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/google-authenticator")
+@RequestMapping("/google-authenticator")
 @AllArgsConstructor
 public class GoogleAuthenticatorResource {
 

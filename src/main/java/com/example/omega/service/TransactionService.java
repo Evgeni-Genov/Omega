@@ -53,12 +53,12 @@ public class TransactionService {
 
         if (senderBalance.getBalance().compareTo(transferAmount) < 0) {
             throw new BadRequestException("Insufficient funds");
-
         }
 
         senderBalance.setBalance(senderBalance.getBalance().subtract(transferAmount));
 
-        var transactionStateHistory = TransactionStateHistory.builder()
+        var transactionStateHistory =  TransactionStateHistory
+                .builder()
                 .previousState(TransactionStatus.PENDING)
                 .newState(TransactionStatus.PENDING)
                 .transaction(transactionMapper.toEntity(transactionDTO))
@@ -77,7 +77,8 @@ public class TransactionService {
     }
 
     private AccountBalance findAccountBalance(UserDTO userDTO, Currency currency) {
-        return userDTO.getAccountBalances()
+        return userDTO
+                .getAccountBalances()
                 .stream()
                 .filter(balance -> balance.getCurrency() == currency)
                 .findFirst()

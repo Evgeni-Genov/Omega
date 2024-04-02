@@ -1,4 +1,4 @@
-package com.example.omega.service.google2Fa;
+package com.example.omega.service;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/mail")
 @Slf4j
 public class MailResource {
 
@@ -23,7 +23,7 @@ public class MailResource {
     //TODO: Maybe use securityUtils.canCurrentUserEditThisData
     // User can prompt send verificationCode to another Mail?
     // @PreAuthorize ROLE_USER, ROLE_ADMIN
-    @PostMapping("/mail")
+    @PostMapping("/verification-code")
     public void sendEmail(@RequestBody String email) {
         var user = userService.getUserByEmail(email);
 
