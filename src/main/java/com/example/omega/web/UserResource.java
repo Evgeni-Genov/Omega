@@ -55,6 +55,7 @@ public class UserResource {
 
     @PutMapping("/update/password")
     @Operation(summary = "Update User password.")
+    @JsonView({Views.PasswordChangeView.class})
     public ResponseEntity<UserDTO> updateUserPassword(Principal principal,
                                                       @JsonView(Views.PasswordChangeView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the password of a user!", principal.getName());

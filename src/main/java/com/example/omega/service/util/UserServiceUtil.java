@@ -140,6 +140,9 @@ public class UserServiceUtil {
      * @param userDTO The UserUpdateDTO containing fields to update.
      * @param user          The User entity to be updated.
      */
+
+    //TODO: StringUtils.isNotBlank()
+    // checks doc, better than this.
     public void fieldsToBeUpdated(UserDTO userDTO, User user) {
         if (userDTO.getFirstName() != null) {
             user.setFirstName(userDTO.getFirstName());

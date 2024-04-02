@@ -33,6 +33,8 @@ public class UserService {
 
     private final UserServiceUtil userServiceUtil;
 
+    private final VerificationCodeService verificationCodeService;
+
     /**
      * Creates a new user.
      *
@@ -210,10 +212,69 @@ public class UserService {
         return userDTO;
     }
 
+    /**
+     * Retrieves a user with their authorities by username.
+     *
+     * @param username The username of the user to retrieve.
+     * @return An optional containing the user with authorities if found, or an empty optional if not found.
+     */
     @Transactional(readOnly = true)
     public Optional<User> getUserWithAuthoritiesByLogin(String username) {
         return userRepository.findOneWithAuthoritiesByUsername(username);
     }
+
+    /**
+     * Retrieves a user by email.
+     *
+     * @param email The email of the user to retrieve.
+     * @return An optional containing the user if found, or an empty optional if not found.
+     */
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Generates a verification code for the specified user, saves it, and associates it with the user.
+     *
+     * @param optionalUser An optional containing the user for whom the verification code is generated.
+     * @return The generated verification code.
+     * @throws BadRequestException if the user is not found.
+     */
+    public String returnSavedVerificationCode(Optional<User> optionalUser) {
+        if (optionalUser.isEmpty()){
+            throw new BadRequestException("User not found!");
+        }
+        var user = optionalUser.get();
+        var verificationCode = verificationCodeService.generateVerificationCode(user);
+
+        user.setVerificationCode(verificationCode);
+        userRepository.save(user);
+
+        return verificationCode.getCode();
+    }
+
+    /**
+     * Verifies the provided code against the verification code associated with the user.
+     *
+     * @param user The user for whom the verification code is verified.
+     * @param code The code to verify.
+     * @return {@code true} if the code is valid and not expired, {@code false} otherwise.
+     */
+    public boolean verifyCode(User user, String code) {
+        var verificationCode = user.getVerificationCode();
+
+        if (verificationCode != null
+                && verificationCode.getCode().equals(code)
+                && (!verificationCodeService.isExpired(verificationCode))) {
+            user.setVerificationCode(null);
+            userRepository.save(user);
+            return true;
+
+        }
+
+        return false;
+    }
+
 
     /**
      * Validates the change of email for a user.
@@ -240,6 +301,8 @@ public class UserService {
      *
      * @param userDTO The UserDTO.
      */
+    //TODO: When changing the email, it would be a good idea for the user
+    // to enter a verification code sent to the new email and then the email will be changed.
     private void changeEmail(UserDTO userDTO) {
         log.debug("Request to update email for user with ID: {}", userDTO.getId());
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());

@@ -138,6 +138,14 @@ public class SecurityUtils {
                         .anyMatch(authority::equals);
     }
 
+    /**
+     * Checks if the current user can edit the data associated with the specified user ID.
+     *
+     * @param principal The principal object representing the current user.
+     * @param userId    The ID of the user whose data is being edited.
+     * @throws BadRequestException if the current user is not authorized to edit the data.
+     */
+    //TODO: access sounds better
     public void canCurrentUserEditThisData(Principal principal, Long userId) {
         var currentUserId = extractCurrentUserIdFromPrincipal(principal);
         boolean isUserAuthenticated = userId.equals(currentUserId) || isCurrentUserInRole(Roles.ROLE_ADMIN.name());
@@ -146,6 +154,13 @@ public class SecurityUtils {
         }
     }
 
+    /**
+     * Extracts the ID of the current user from the provided principal.
+     *
+     * @param principal The principal object representing the current user.
+     * @return The ID of the current user.
+     * @throws BadRequestException if no user is present in the principal.
+     */
     public Long extractCurrentUserIdFromPrincipal(Principal principal) {
         var currentUserLogin = principal.getName();
         var currentUser = userService.getUserWithAuthoritiesByLogin(currentUserLogin);

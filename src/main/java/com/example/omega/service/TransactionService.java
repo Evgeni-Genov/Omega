@@ -40,7 +40,6 @@ public class TransactionService {
      */
     public TransactionDTO saveTransaction(TransactionDTO transactionDTO) {
         var transaction = transactionMapper.toEntity(transactionDTO);
-//        transaction.setSender(currentUser);
         return transactionMapper.toDTO(transactionRepository.save(transaction));
     }
 

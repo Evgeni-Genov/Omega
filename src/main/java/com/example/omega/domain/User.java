@@ -78,8 +78,17 @@ public class User extends AbstractAuditingEntity {
     @Column
     private Boolean twoFactorAuthentication;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JoinColumn(name = "verification_code_id")
+    private VerificationCode verificationCode;
+
 //    @Column
 //    @JoinColumn(unique = true)
 //    private UserDetailsImpl userDetails;
+
+    public void setVerificationCode(VerificationCode verificationCode) {
+        this.verificationCode = verificationCode;
+        verificationCode.setUser(this);
+    }
 
 }

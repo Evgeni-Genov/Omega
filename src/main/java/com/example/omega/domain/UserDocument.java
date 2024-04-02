@@ -11,7 +11,7 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
-public class UserDocument extends AbstractAuditingEntity{
+public class UserDocument extends AbstractAuditingEntity {
 
     @Id
     @GeneratedValue(generator = "user_document_sequence_generator", strategy = GenerationType.SEQUENCE)
