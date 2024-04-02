@@ -8,6 +8,8 @@ import com.example.omega.config.security.payload.response.MessageResponse;
 import com.example.omega.domain.UserDetailsImpl;
 import com.example.omega.mapper.UserMapper;
 import com.example.omega.service.UserService;
+import com.example.omega.service.Views;
+import com.fasterxml.jackson.annotation.JsonView;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -62,9 +64,10 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
+    @JsonView(value = Views.CreateView.class)
     public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
         var user = userMapper.toUserAuth(signUpRequest);
-        userService.createUser(userMapper.toCreateDTO(user));
+        userService.createUser(userMapper.toDTO(user));
         return ResponseEntity.ok(new MessageResponse("SUCCESSFUL_REGISTRATION"));
     }
 

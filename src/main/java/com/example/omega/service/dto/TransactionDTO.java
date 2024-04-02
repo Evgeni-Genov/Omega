@@ -40,10 +40,9 @@ public class TransactionDTO extends AbstractAuditingDTO {
     @Schema(type = "String", allowableValues = {"USD", "BGN", "EUR", "GBP", "JPY"}, description = "Currency")
     private Currency currency;
 
-    private TransactionStatus transactionStatus;
-
     @Enumerated(EnumType.STRING)
     @Schema(type = "String", allowableValues = {"PURCHASE", "TRANSFER", "WITHDRAWAL"}, description = "Transaction Type")
     private TransactionType type;
 
+    private TransactionStatus transactionStatus;
 }

@@ -2,8 +2,8 @@ package com.example.omega.service.util;
 
 import com.example.omega.domain.User;
 import com.example.omega.repository.UserRepository;
-import com.example.omega.service.dto.UserUpdateDTO;
-import com.example.omega.service.exception.HttpBadRequestException;
+import com.example.omega.service.dto.UserDTO;
+import com.example.omega.service.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -24,12 +24,12 @@ public class UserServiceUtil {
      * Validates that the user is not null.
      *
      * @param user The user to be validated.
-     * @throws HttpBadRequestException If the user is null.
+     * @throws BadRequestException If the user is null.
      */
     public void validateUserNotNull(User user) {
         if (user == null) {
             log.debug("Can't create null as a user!");
-            throw new HttpBadRequestException("Can't create null as a user!");
+            throw new BadRequestException("Can't create null as a user!");
         }
     }
 
@@ -37,12 +37,12 @@ public class UserServiceUtil {
      * Validates that the username and password are not empty.
      *
      * @param user The user to be validated.
-     * @throws HttpBadRequestException If the username or password is empty.
+     * @throws BadRequestException If the username or password is empty.
      */
     public void validateUsernameAndPasswordNotEmpty(User user) {
         if (StringUtils.isEmpty(user.getUsername()) || StringUtils.isEmpty(user.getPassword())) {
             log.debug("Username and password are required.");
-            throw new HttpBadRequestException("Username and password are required.");
+            throw new BadRequestException("Username and password are required.");
         }
     }
 
@@ -50,12 +50,12 @@ public class UserServiceUtil {
      * Validates that the username is not already taken.
      *
      * @param username The username to be validated.
-     * @throws HttpBadRequestException If the username is already taken.
+     * @throws BadRequestException If the username is already taken.
      */
     public void validateUsernameNotTaken(String username) {
         if (Boolean.TRUE.equals(existsByUsername(username))) {
             log.debug("Username {} is already taken.", username);
-            throw new HttpBadRequestException("Username is already taken.");
+            throw new BadRequestException("Username is already taken.");
         }
     }
 
@@ -63,12 +63,12 @@ public class UserServiceUtil {
      * Validates that the email is not already registered.
      *
      * @param email The email to be validated.
-     * @throws HttpBadRequestException If the email is already registered.
+     * @throws BadRequestException If the email is already registered.
      */
     public void validateEmailNotRegistered(String email) {
         if (email != null && Boolean.TRUE.equals(existsByEmail(email))) {
             log.debug("Email {} is already registered.", email);
-            throw new HttpBadRequestException("Email is already registered.");
+            throw new BadRequestException("Email is already registered.");
         }
     }
 
@@ -114,66 +114,56 @@ public class UserServiceUtil {
      *
      * @param userId The ID of the user to validate.
      * @return The User entity if valid and found.
-     * @throws HttpBadRequestException If the provided userId is invalid
+     * @throws BadRequestException If the provided userId is invalid
      *                                 or if the user with the specified ID is not found.
      */
     public User validateAndGetUser(Long userId) {
         log.debug("Validating and retrieving User by ID: {}", userId);
 
         if (userId == null) {
-            throw new HttpBadRequestException("Invalid userId provided.");
+            throw new BadRequestException("Invalid userId provided.");
         }
 
         var optionalUser = userRepository.findById(userId);
 
         if (optionalUser.isEmpty()) {
-            throw new HttpBadRequestException("User not found for ID: " + userId);
+            throw new BadRequestException("User not found for ID: " + userId);
         }
 
         return optionalUser.get();
     }
 
     /**
-     * Determines whether an email address should be updated based on a comparison between the existing email and the new email.
-     *
-     * @param existingEmail The existing email address to compare.
-     * @param newEmail      The new email address to compare.
-     * @return {@code true} if the existing and new email addresses are different and should be updated,
-     * {@code false} if they are the same and should not be updated.
-     */
-    public Boolean shouldUpdateEmail(String existingEmail, String newEmail) {
-        log.debug("Comparing the existing and the new email!");
-        return !existingEmail.equalsIgnoreCase(newEmail);
-    }
-
-    /**
      * Update user entity fields based on the provided UserUpdateDTO. Only non-null fields in the UserUpdateDTO
      * will be applied to the user entity.
      *
-     * @param userUpdateDTO The UserUpdateDTO containing fields to update.
+     * @param userDTO The UserUpdateDTO containing fields to update.
      * @param user          The User entity to be updated.
      */
-    public void fieldsToBeUpdated(UserUpdateDTO userUpdateDTO, User user) {
-        if (userUpdateDTO.getFirstName() != null) {
-            user.setFirstName(userUpdateDTO.getFirstName());
+
+    //TODO: StringUtils.isNotBlank()
+    // checks doc, better than this.
+    public void fieldsToBeUpdated(UserDTO userDTO, User user) {
+        if (userDTO.getFirstName() != null) {
+            user.setFirstName(userDTO.getFirstName());
         }
-        if (userUpdateDTO.getLastName() != null) {
-            user.setLastName(userUpdateDTO.getLastName());
+        if (userDTO.getLastName() != null) {
+            user.setLastName(userDTO.getLastName());
         }
-        if (userUpdateDTO.getPhoneNumber() != null) {
-            user.setPhoneNumber(userUpdateDTO.getPhoneNumber());
+        if (userDTO.getPhoneNumber() != null) {
+            user.setPhoneNumber(userDTO.getPhoneNumber());
         }
-        if (userUpdateDTO.getAddress() != null) {
-            user.setAddress(userUpdateDTO.getAddress());
+        if (userDTO.getAddress() != null) {
+            user.setAddress(userDTO.getAddress());
         }
-        if (userUpdateDTO.getTownOfBirth() != null) {
-            user.setTownOfBirth(userUpdateDTO.getTownOfBirth());
+        if (userDTO.getTownOfBirth() != null) {
+            user.setTownOfBirth(userDTO.getTownOfBirth());
         }
-        if (userUpdateDTO.getCountryOfBirth() != null) {
-            user.setCountryOfBirth(userUpdateDTO.getCountryOfBirth());
+        if (userDTO.getCountryOfBirth() != null) {
+            user.setCountryOfBirth(userDTO.getCountryOfBirth());
         }
-        if (userUpdateDTO.getNameTag() != null) {
-            user.setNameTag(userUpdateDTO.getNameTag());
+        if (userDTO.getNameTag() != null) {
+            user.setNameTag(userDTO.getNameTag());
         }
     }
 }

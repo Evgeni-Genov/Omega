@@ -2,7 +2,7 @@ package com.example.omega.service.util;
 
 import com.example.omega.domain.enumeration.Roles;
 import com.example.omega.service.UserService;
-import com.example.omega.service.exception.HttpBadRequestException;
+import com.example.omega.service.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -131,26 +131,41 @@ public class SecurityUtils {
      * @param authority the authority to check.
      * @return true if the current user has the authority, false otherwise.
      */
-    public static boolean isCurrentUserInRole(String authority) {
+    public boolean isCurrentUserInRole(String authority) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null &&
                 getAuthorities(authentication)
                         .anyMatch(authority::equals);
     }
 
+    /**
+     * Checks if the current user can edit the data associated with the specified user ID.
+     *
+     * @param principal The principal object representing the current user.
+     * @param userId    The ID of the user whose data is being edited.
+     * @throws BadRequestException if the current user is not authorized to edit the data.
+     */
+    //TODO: access sounds better
     public void canCurrentUserEditThisData(Principal principal, Long userId) {
         var currentUserId = extractCurrentUserIdFromPrincipal(principal);
         boolean isUserAuthenticated = userId.equals(currentUserId) || isCurrentUserInRole(Roles.ROLE_ADMIN.name());
         if (!isUserAuthenticated) {
-            throw new HttpBadRequestException("You do not have permission to update this Entity!");
+            throw new BadRequestException("You do not have permission to update this Entity!");
         }
     }
 
+    /**
+     * Extracts the ID of the current user from the provided principal.
+     *
+     * @param principal The principal object representing the current user.
+     * @return The ID of the current user.
+     * @throws BadRequestException if no user is present in the principal.
+     */
     public Long extractCurrentUserIdFromPrincipal(Principal principal) {
         var currentUserLogin = principal.getName();
         var currentUser = userService.getUserWithAuthoritiesByLogin(currentUserLogin);
         if (currentUser.isEmpty()) {
-            throw new HttpBadRequestException("No user is present!");
+            throw new BadRequestException("No user is present!");
         }
         return currentUser.get().getId();
     }
