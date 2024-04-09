@@ -5,7 +5,6 @@ import com.example.omega.domain.VerificationCode;
 import com.example.omega.repository.VerificationCodeRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +17,6 @@ import java.util.Random;
 @Transactional
 @AllArgsConstructor
 public class VerificationCodeService {
-
-    public static final String EVERY_TWO_MINUTES = "0 */2 * ? * *";
 
     private final VerificationCodeRepository verificationCodeRepository;
 
@@ -51,17 +48,6 @@ public class VerificationCodeService {
      */
     public boolean isExpired(VerificationCode verificationCode) {
         return Instant.now().isAfter(verificationCode.getExpirationTime());
-    }
-
-    /**
-     * Scheduled task to delete expired verification codes from the repository.
-     * This task runs periodically according to the specified cron expression.
-     */
-    @Scheduled(cron = EVERY_TWO_MINUTES)
-    public void deleteExpiredVerificationCodes() {
-        var now = Instant.now();
-        verificationCodeRepository.deleteByExpirationTimeBefore(now);
-        log.debug("Deleting all expired Verification Codes!");
     }
 
 }

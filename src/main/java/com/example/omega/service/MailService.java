@@ -34,7 +34,7 @@ public class MailService {
         var subject = "Verification Code";
         var verificationCode = userService.returnSavedVerificationCode(user);
 
-        log.debug("Send email to: {} with verification code {}.", recipient, verificationCode);
+        log.debug("Sending email to: {} with verification code {}.", recipient, verificationCode);
         try {
             var message = emailSender.createMimeMessage();
             var helper = new MimeMessageHelper(message, false);

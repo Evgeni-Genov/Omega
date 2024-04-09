@@ -66,3 +66,6 @@ omega:
 
 google-authenticator:
   secret-phone: ${GOOGLE_AUTHENTICATOR_SECRET_PHONE}
+
+javers:
+  newObjectSnapshot: true
