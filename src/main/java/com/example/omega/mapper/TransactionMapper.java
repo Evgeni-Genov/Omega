@@ -15,6 +15,7 @@ public interface TransactionMapper {
 
     @Mapping(source = "senderId", target = "sender.id")
     @Mapping(source = "recipientId", target = "recipient.id")
+    @Mapping(source = "transactionType", target = "transactionType")
     Transaction toEntity(TransactionDTO transactionDTO);
 
     default User fromId(Long userId) {

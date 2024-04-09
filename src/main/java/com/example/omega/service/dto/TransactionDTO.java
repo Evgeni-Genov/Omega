@@ -42,7 +42,7 @@ public class TransactionDTO extends AbstractAuditingDTO {
 
     @Enumerated(EnumType.STRING)
     @Schema(type = "String", allowableValues = {"PURCHASE", "TRANSFER", "WITHDRAWAL"}, description = "Transaction Type")
-    private TransactionType type;
+    private TransactionType transactionType;
 
     private TransactionStatus transactionStatus;
 }

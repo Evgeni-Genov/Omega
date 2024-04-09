@@ -50,7 +50,10 @@ public class SecurityConfig {
                         .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
                         .requestMatchers("/management/info").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll() // Permit unauthenticated access to /management/info.
-                        .requestMatchers("/api/**").authenticated()) // Permit unauthenticated access to /management/info.
+                        .requestMatchers("/user/**").authenticated()
+                        .requestMatchers("/transaction/**").authenticated()
+                        .requestMatchers("/mail/**").authenticated()
+                        .requestMatchers("/google-authenticator/**").authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
                 .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)

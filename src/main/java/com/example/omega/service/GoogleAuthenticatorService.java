@@ -4,12 +4,8 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.qrcode.QRCodeWriter;
-import de.taimos.totp.TOTP;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Hex;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -25,26 +21,12 @@ import java.security.SecureRandom;
 @Slf4j
 public class GoogleAuthenticatorService {
 
-    private static final String EVERY_25_SECONDS = "*/30 * * * * *";
-
-    @Value("${google-authenticator.secret-phone}")
-    private String secretKey;
-
     public String generateSecretKey() {
         var random = new SecureRandom();
         var bytes = new byte[20];
         random.nextBytes(bytes);
         var base32 = new Base32();
         return base32.encodeToString(bytes);
-    }
-
-    @Scheduled(cron = EVERY_25_SECONDS)
-    public void getTOTPCode() {
-//        var secretKey = "OAXOXTB44MFXVS6PRMH7HQFQCCTZEANG";
-        var base32 = new Base32();
-        var bytes = base32.decode(secretKey);
-        var hexKey = Hex.encodeHexString(bytes);
-        log.debug(TOTP.getOTP(hexKey));
     }
 
     public String getGoogleAuthenticatorBarCode(String secretKey, String account, String issuer) {
