@@ -43,13 +43,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
-                .cors(withDefaults()) // Enable CORS with default settings.
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
-                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests // Configure URL patterns and access control.
+                .cors(withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
+                        .requestMatchers("/management/health").permitAll()
                         .requestMatchers("/management/info").permitAll()
-                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll() // Permit unauthenticated access to /management/info.
+                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/transaction/**").authenticated()
                         .requestMatchers("/mail/**").authenticated()
@@ -62,7 +62,6 @@ public class SecurityConfig {
                         .invalidateHttpSession(false)
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/logout-success"));
-
         return http.build();
     }
 
