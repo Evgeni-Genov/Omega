@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Entity
 @Table
@@ -48,9 +47,5 @@ public class Transaction extends AbstractAuditingEntity{
     @Column
     @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
-
-    @Column
-    @OneToMany(mappedBy = "transaction")
-    private List<TransactionStateHistory> transactionStateHistories;
 
 }
