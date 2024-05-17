@@ -38,7 +38,7 @@ public class UserResource {
     @JsonView({Views.UpdateNonCredentialView.class})
     public ResponseEntity<UserDTO> updateUserNonCredentialInformation(Principal principal, @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the non-credential data of a user!", principal.getName());
-        securityUtils.canCurrentUserEditThisData(principal, userDTO.getId());
+        securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.partiallyUpdateUserNonCredentialInformation(userDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
@@ -48,7 +48,7 @@ public class UserResource {
     @JsonView({Views.SecurityUpdateView.class})
     public ResponseEntity<UserDTO> updateUserSecurityData(Principal principal, @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the security data of a user!", principal.getName());
-        securityUtils.canCurrentUserEditThisData(principal, userDTO.getId());
+        securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.updateUserSecurityData(userDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
@@ -59,7 +59,7 @@ public class UserResource {
     public ResponseEntity<UserDTO> updateUserPassword(Principal principal,
                                                       @JsonView(Views.PasswordChangeView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the password of a user!", principal.getName());
-        securityUtils.canCurrentUserEditThisData(principal, userDTO.getId());
+        securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.changePassword(userDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
@@ -83,11 +83,21 @@ public class UserResource {
         return ResponseEntity.ok().headers(headers).body(usersPage.getContent());
     }
 
+    @GetMapping("/user/{id}")
+    @Operation(summary = "Get user by id.")
+    @JsonView(Views.PersonalView.class)
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id, Principal principal){
+        log.debug("User: {} is trying to read user by id!", principal.getName());
+        securityUtils.canCurrentUserAccessThisData(principal, id);
+        var user = userService.getUserById(id);
+        return ResponseEntity.ok().body(user);
+    }
+
     @DeleteMapping("/users/{userId}")
     @Operation(summary = "Delete a user by their unique user ID.")
     public ResponseEntity<Void> deleteUserById(Principal principal, @PathVariable Long userId) {
         log.debug("User: {} is trying to delete a user by id!", principal.getName());
-        securityUtils.canCurrentUserEditThisData(principal, userId);
+        securityUtils.canCurrentUserAccessThisData(principal, userId);
         userService.deleteById(userId);
         return ResponseEntity.noContent().build();
     }

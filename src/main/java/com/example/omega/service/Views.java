@@ -19,4 +19,8 @@ public class Views {
 
     public interface AllUsersWithDetails {
     }
+
+    public interface PersonalView {
+
+    }
 }

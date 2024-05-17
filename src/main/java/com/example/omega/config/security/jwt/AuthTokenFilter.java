@@ -39,10 +39,12 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @throws ServletException If a servlet error occurs.
      * @throws IOException      If an I/O error occurs.
      */
+    //TODO: logging in: Missing access token. Rejecting! we log in though why?
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("Authenticating request!");
         try {
+
             var jwtAccessToken = parseJwtAccessToken(request);
             if (jwtAccessToken == null && !isSignUpRequest(request)) {
                 log.error("Missing access token. Rejecting!");
@@ -64,6 +66,37 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
+
+    //TODO: this fixes the registration error logs
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+//        log.info("Authenticating request!");
+//        try {
+//            if (isSignUpRequest(request)){
+//                filterChain.doFilter(request, response);
+//                return;
+//            }
+//            var jwtAccessToken = parseJwtAccessToken(request);
+//            if (jwtAccessToken == null) {
+//                log.error("Missing access token. Rejecting!");
+//                filterChain.doFilter(request, response);
+//                return;
+//            }
+//            if (jwtUtils.validateJwtToken(jwtAccessToken)) {
+//                var username = jwtUtils.getUsernameFromJwtToken(jwtAccessToken);
+//                var userDetails = userDetailsService.loadUserByUsername(username);
+//                var passwordAuthenticationToken =
+//                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+//                passwordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+//                SecurityContextHolder.getContext().setAuthentication(passwordAuthenticationToken);
+//            }
+//        } catch (Exception e) {
+//            log.error("Cannot set user authentication: {}", e.getMessage());
+//        }
+//        filterChain.doFilter(request, response);
+//    }
 
     /**
      * Parses the JWT token from the HTTP request's AUTHORIZATION header.

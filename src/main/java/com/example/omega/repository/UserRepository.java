@@ -21,4 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long>, CrudRepositor
     Optional<User> findOneWithAuthoritiesByUsername(String username);
 
     Optional<User> findByEmail(String email);
+
+    void deleteByEnabledEquals(Boolean enabled);
+
+    Optional<User> getUserByEmailVerificationTokenEquals(String emailVerificationToken);
 }

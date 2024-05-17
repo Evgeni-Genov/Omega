@@ -82,6 +82,9 @@ public class User extends AbstractAuditingEntity {
     @JoinColumn(name = "verification_code_id")
     private VerificationCode verificationCode;
 
+    @Column
+    private String emailVerificationToken;
+
 //    @Column
 //    @JoinColumn(unique = true)
 //    private UserDetailsImpl userDetails;

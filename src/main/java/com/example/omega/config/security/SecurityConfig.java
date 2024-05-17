@@ -49,10 +49,10 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/management/health").permitAll()
                         .requestMatchers("/management/info").permitAll()
+                        .requestMatchers("/mail/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll()
-                        .requestMatchers("/user/**").authenticated()
+                        .requestMatchers("/user/**").permitAll()
                         .requestMatchers("/transaction/**").authenticated()
-                        .requestMatchers("/mail/**").authenticated()
                         .requestMatchers("/google-authenticator/**").authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token

@@ -2,6 +2,7 @@ package com.example.omega.service;
 
 import com.example.omega.domain.enumeration.TransactionStatus;
 import com.example.omega.repository.TransactionRepository;
+import com.example.omega.repository.UserRepository;
 import com.example.omega.repository.VerificationCodeRepository;
 import de.taimos.totp.TOTP;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +30,12 @@ public class ScheduledTasks {
 
     private final TransactionRepository transactionRepository;
 
-    public ScheduledTasks(VerificationCodeRepository verificationCodeRepository, TransactionRepository transactionRepository) {
+    private final UserRepository userRepository;
+
+    public ScheduledTasks(VerificationCodeRepository verificationCodeRepository, TransactionRepository transactionRepository, UserRepository userRepository) {
         this.verificationCodeRepository = verificationCodeRepository;
         this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -52,9 +56,10 @@ public class ScheduledTasks {
      */
     @Scheduled(cron = EVERY_TWO_MINUTES)
     public void deleteExpiredVerificationCodes() {
+        log.debug("Starting deletion of all expired Verification Codes!");
         var now = Instant.now();
         verificationCodeRepository.deleteByExpirationTimeBefore(now);
-        log.debug("Deleting all expired Verification Codes!");
+        log.debug("Deletion of all expired Verification Codes completed!");
     }
 
     /**
@@ -63,10 +68,19 @@ public class ScheduledTasks {
      */
     @Scheduled(cron = EVERY_SUNDAY_1_AM)
     public void deleteExpiredTransactions() {
+        log.debug("Starting deletion all expired Transactions!");
         var lastMonday = LocalDate.now(ZoneOffset.UTC)
                 .minusWeeks(1)
                 .with(DayOfWeek.MONDAY);
         var lastMondayToInstant = lastMonday.atStartOfDay(ZoneOffset.UTC).toInstant();
         transactionRepository.deleteAllTransactionsWithStatusOlderThan(TransactionStatus.SUCCESSFUL.name(), lastMondayToInstant);
+        log.debug("Deletion of all expired Transactions completed!");
+    }
+
+    @Scheduled(cron = EVERY_DAY_3_AM)
+    public void deleteAllNonActivatedUsers(){
+        log.debug("Starting deletion of all non activated users!");
+        userRepository.deleteByEnabledEquals(false);
+        log.debug("Deletion of all non activated users completed!");
     }
 }

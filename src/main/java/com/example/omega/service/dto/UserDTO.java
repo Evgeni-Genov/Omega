@@ -38,31 +38,31 @@ public class UserDTO extends AbstractAuditingDTO {
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String newEmail;
 
-    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class})
+    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String firstName;
 
-    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class})
+    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class })
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String lastName;
 
-    @JsonView({Views.UpdateNonCredentialView.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String address;
 
-    @JsonView({Views.UpdateNonCredentialView.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String townOfBirth;
 
-    @JsonView({Views.UpdateNonCredentialView.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String countryOfBirth;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String nameTag;
 
-    @JsonView({Views.SecurityUpdateView.class})
+    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
     private String phoneNumber;
@@ -81,6 +81,8 @@ public class UserDTO extends AbstractAuditingDTO {
     )
     private String newPassword;
 
+    private String emailVerificationToken;
+
     @JsonView({Views.AllUsersWithDetails.class})
     @Enumerated(EnumType.STRING)
     private Roles role;
@@ -94,12 +96,13 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
     private Boolean twoFactorAuthentication;
 
-    @JsonView(Views.AllUsersWithDetails.class)
+    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
     private List<AccountBalance> accountBalances;
 
-    @JsonView(Views.AllUsersWithDetails.class)
+    @JsonView({Views.AllUsersWithDetails.class,  Views.AllUsersWithDetails.class})
     private List<Transaction> outgoingTransactions;
 
-    @JsonView(Views.AllUsersWithDetails.class)
+    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
     private List<Transaction> incomingTransactions;
+
 }

@@ -27,7 +27,6 @@ public class TransactionService {
 
     private final AccountBalanceRepository accountBalanceRepository;
 
-
     /**
      * Save a transaction based on the provided TransactionDTO.
      *

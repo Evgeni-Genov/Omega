@@ -8,30 +8,30 @@
     <changeSet id="create-user-table" author="admin">
         <createTable tableName="user">
             <column name="id" type="BIGINT">
-                <constraints primaryKey="true" nullable="false" />
+                <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="username" type="varchar(255)">
-                <constraints unique="true" nullable="false" />
+                <constraints unique="true" nullable="false"/>
             </column>
-            <column name="email" type="varchar(255)" />
-            <column name="first_name" type="varchar(255)" />
-            <column name="last_name" type="varchar(255)" />
-            <column name="password" type="varchar(255)" />
-            <column name="name_tag" type="varchar(255)" />
-            <column name="phone_number" type="varchar(255)" />
-            <column name="address" type="varchar(255)" />
+            <column name="email" type="varchar(255)"/>
+            <column name="first_name" type="varchar(255)"/>
+            <column name="last_name" type="varchar(255)"/>
+            <column name="password" type="varchar(255)"/>
+            <column name="name_tag" type="varchar(255)"/>
+            <column name="phone_number" type="varchar(255)"/>
+            <column name="address" type="varchar(255)"/>
             <column name="role" type="varchar(255)"/>
-            <column name="town_of_birth" type="varchar(255)" />
-            <column name="country_of_birth" type="varchar(255)" />
-            <column name="two_factor_authentication" type="BOOLEAN" />
+            <column name="town_of_birth" type="varchar(255)"/>
+            <column name="country_of_birth" type="varchar(255)"/>
+            <column name="two_factor_authentication" type="BOOLEAN"/>
             <column name="locked" type="BOOLEAN"/>
             <column name="enabled" type="BOOLEAN"/>
 
             <!-- Auditing columns -->
-            <column name="created_by" type="varchar(255)" />
-            <column name="created_date" type="timestamp" />
-            <column name="last_modified_by" type="varchar(255)" />
-            <column name="last_modified_date" type="timestamp" />
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_date" type="timestamp"/>
+            <column name="last_modified_by" type="varchar(255)"/>
+            <column name="last_modified_date" type="timestamp"/>
         </createTable>
     </changeSet>
 
@@ -50,6 +50,14 @@
                                  referencedColumnNames="id"
                                  baseColumnNames="verification_code_id"
                                  onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="add-column-email_verification_token-to-table" author="egenov">
+        <comment>Add new email verification token to table customer</comment>
+        <addColumn tableName="user">
+            <column name="email_verification_token" type="varchar(255)">
+            </column>
+        </addColumn>
     </changeSet>
 
 </databaseChangeLog>

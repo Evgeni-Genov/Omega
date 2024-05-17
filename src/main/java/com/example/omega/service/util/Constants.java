@@ -16,4 +16,6 @@ public class Constants {
     public static final String EVERY_TWO_MINUTES = "0 */2 * ? * *";
 
     public static final String EVERY_25_SECONDS = "*/30 * * * * *";
+
+    public static final String EVERY_DAY_3_AM = "0 0 3 * * ?";
 }

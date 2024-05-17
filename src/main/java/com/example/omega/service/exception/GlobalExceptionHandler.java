@@ -63,6 +63,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException ex) {
+        var formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
+        var formattedInstant = formatter.format(LocalDateTime.now());
+        var error = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), formattedInstant);
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     //TODO: test
     @ExceptionHandler(HttpClientErrorException.Unauthorized.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)

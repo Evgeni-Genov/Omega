@@ -48,18 +48,44 @@ public class UserService {
         var user = userMapper.toEntity(userCreateDTO);
 
         userServiceUtil.validateUserNotNull(user);
+        userServiceUtil.validateEmailNotRegistered(user.getEmail());
         userServiceUtil.validateUsernameAndPasswordNotEmpty(user);
         userServiceUtil.validateUsernameNotTaken(user.getUsername());
-        userServiceUtil.validateEmailNotRegistered(user.getEmail());
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
         user.setRole(Roles.ROLE_USER);
         user.setLocked(false);
+        user.setEnabled(false);
 
         var savedUser = userRepository.save(user);
         log.debug("User created successfully: {}", user);
         return userMapper.toDTO(savedUser);
+    }
+
+    public boolean isUserEnabled(String username) {
+        var user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            throw new BadRequestException(String.format("User with username: %s is not found", username));
+        }
+
+        return user.get().getEnabled();
+    }
+
+    public void activateUser(UserDTO userDTO) {
+        userDTO.setEnabled(true);
+        userRepository.save(userMapper.toEntity(userDTO));
+        log.debug("User activated successfully: {}", userDTO);
+    }
+
+    public UserDTO findUserByEmailVerificationToken(String token) {
+        log.debug("Find User by email verification token: {}", token);
+        var user = userRepository.getUserByEmailVerificationTokenEquals(token);
+        if (user.isEmpty()) {
+            throw new BadRequestException("Invalid verification token");
+        }
+
+        return userMapper.toDTO(user.get());
     }
 
     /**
