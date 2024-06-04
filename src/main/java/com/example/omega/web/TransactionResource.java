@@ -3,22 +3,25 @@ package com.example.omega.web;
 import com.example.omega.domain.Transaction;
 import com.example.omega.service.TransactionService;
 import com.example.omega.service.dto.TransactionDTO;
+import com.example.omega.service.util.PaginationUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.javers.core.Javers;
 import org.javers.core.metamodel.object.CdoSnapshot;
 import org.javers.repository.jql.QueryBuilder;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.security.Principal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/transaction")
 @Slf4j
 @AllArgsConstructor
+@RequestMapping("/transaction")
 public class TransactionResource {
 
     private final TransactionService transactionService;
@@ -38,5 +41,13 @@ public class TransactionResource {
         QueryBuilder jqlQuery = QueryBuilder.byClass(Transaction.class);
         List<CdoSnapshot> snapshots = javers.findSnapshots(jqlQuery.build());
         return javers.getJsonConverter().toJson(snapshots);
+    }
+
+    @GetMapping("/all-transactions/{userId}")
+    public ResponseEntity<List<TransactionDTO>> getAllTransactionsForUser(Pageable pageable, @PathVariable Long userId) {
+        log.debug("REST request to get a page of Transactions");
+        var transactionsPage = transactionService.getAllTransactionsForAUser(pageable, userId);
+        var headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), transactionsPage);
+        return ResponseEntity.ok().headers(headers).body(transactionsPage.getContent());
     }
 }

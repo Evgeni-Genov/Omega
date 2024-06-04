@@ -8,6 +8,9 @@ public class Views {
     public interface PasswordChangeView {
     }
 
+    public interface PasswordResetView {
+    }
+
     public interface SearchView {
     }
 
@@ -21,6 +24,13 @@ public class Views {
     }
 
     public interface PersonalView {
+    }
+
+    public interface TwoFactorAuthenticationView {
+
+    }
+
+    public interface TwoFactorSecretView {
 
     }
 }

@@ -3,6 +3,7 @@ package com.example.omega.config.security;
 import com.example.omega.config.security.jwt.AuthTokenFilter;
 import com.example.omega.service.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
+
+import java.util.Arrays;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -47,13 +51,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/user/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/management/health").permitAll()
                         .requestMatchers("/management/info").permitAll()
                         .requestMatchers("/mail/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll()
                         .requestMatchers("/user/**").permitAll()
-                        .requestMatchers("/transaction/**").authenticated()
-                        .requestMatchers("/google-authenticator/**").authenticated())
+                        .requestMatchers("/transaction/**").permitAll()
+                        .requestMatchers("/google-authenticator/**").permitAll()
+                        .requestMatchers("/account-balance/**").permitAll()
+                        .requestMatchers("/transaction/**").permitAll()
+                )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
                 .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
@@ -111,5 +120,12 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
         return authConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public StrictHttpFirewall httpFirewall(ErrorAttributes errorAttributes) {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowedHttpMethods(Arrays.asList("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"));
+        return firewall;
     }
 }

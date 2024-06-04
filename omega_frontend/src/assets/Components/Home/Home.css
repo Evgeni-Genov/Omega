@@ -1,7 +1,35 @@
-.inputButton {
-    margin-bottom: 10px;
+.mainContainer {
+    background-color: #f5f5f5;
+    padding: 2rem;
+    border-radius: 8px;
 }
 
-.smallButton {
-    font-size: 12px !important;
+.heroSection {
+    background-image: url('src/assets/Components/Assets/business-5475658_1280.jpg'); /* Replace with actual image URL */
+    background-size: cover;
+    background-position: center;
+    padding: 5rem 2rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.featureCard {
+    text-align: center;
+    padding: 1rem;
+}
+
+.testimonialCard {
+    background-color: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.footer {
+    margin-top: 4rem;
+    padding: 2rem 0;
+    background-color: #663399;
+    color: white;
+    text-align: center;
 }

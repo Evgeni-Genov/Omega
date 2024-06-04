@@ -22,9 +22,10 @@
 
     <include file="liquibase/20242603/20242603211900_added_entity_VerificationCode.xml"
              relativeToChangelogFile="false"/>
+    <include file="liquibase/20242805/20242805103100_added_entity_PasswordResetLink.xml"
+             relativeToChangelogFile="false"/>
 
     <!-- Include foreign key constraints for User entity -->
-
 
     <!-- END HERE -->
 </databaseChangeLog>

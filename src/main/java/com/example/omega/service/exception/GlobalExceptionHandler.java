@@ -50,7 +50,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleInternalServerErrorException(Exception ex) {
         var formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
         var formattedInstant = formatter.format(LocalDateTime.now());
-        var errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getCause().getCause().toString(), formattedInstant);
+        var cause = ex.getCause() != null ? ex.getCause().toString() : ex.toString();
+        var errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, cause, formattedInstant);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 

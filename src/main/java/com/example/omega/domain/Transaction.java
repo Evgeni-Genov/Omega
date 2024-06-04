@@ -22,11 +22,11 @@ public class Transaction extends AbstractAuditingEntity{
     @SequenceGenerator(name = "transaction_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recipient_id")
     private User recipient;
 

@@ -2,7 +2,9 @@ package com.example.omega.repository;
 
 import com.example.omega.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -25,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long>, CrudRepositor
     void deleteByEnabledEquals(Boolean enabled);
 
     Optional<User> getUserByEmailVerificationTokenEquals(String emailVerificationToken);
+
+    @Query("SELECT u.twoFactorAuthentication FROM User u WHERE u.username = :username")
+    boolean isTwoFactorAuthenticationEnabled(@Param("username") String username);
 }

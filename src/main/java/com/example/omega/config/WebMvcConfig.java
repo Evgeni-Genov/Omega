@@ -51,8 +51,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/user/*").allowedOrigins(cors);
+        registry.addMapping("/user/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+        registry.addMapping("/user/update/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/user/reset-password").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/user/reset-password/confirm/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/user/reset-password/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
         registry.addMapping("/auth/*").allowedOrigins(cors);
-        registry.addMapping("http://localhost:5173").allowedOrigins(cors);
+        registry.addMapping("/user/*").allowedOrigins(cors);
+        registry.addMapping("/google-authenticator/*").allowedOrigins(cors);
+        registry.addMapping("/account-balance/account-balances/user/*").allowedOrigins(cors);
+        registry.addMapping("/transaction/all-transactions/*").allowedOrigins(cors);
+        registry.addMapping("http://localhost:5173").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+        registry.addMapping("http://localhost:5173/").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
     }
 }

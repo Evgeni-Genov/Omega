@@ -1,11 +1,12 @@
 spring:
   cors:
-    allowed-origins: 'http://localhost:5173'
+    allowed-origins: '*'
     allowed-methods: '*'
     allowed-headers: '*'
     allow-credentials: true
   mvc:
     throw-exception-if-no-handler-found: true
+    dispatch-options-request: true
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}

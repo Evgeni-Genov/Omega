@@ -1,11 +1,14 @@
 import {BrowserRouter, Route, Routes} from 'react-router-dom'
 import Home from './assets/Components/Home/Home.tsx'
-import Login from './assets/Components/Login/Login.tsx'
 import UserList from './assets/Components/UserList.tsx'
-import Registration from './assets/Components/Registration/Registration.tsx'
+
 import UserProfile from './assets/Components/Login/UserProfile.tsx'
 import './App.css'
-import {useState} from 'react'
+import {useState} from "react";
+import SignIn from "./assets/Components/Login/SignIn.tsx";
+import SignUp from "./assets/Components/Registration/SignUp.tsx";
+import ResetPassword from "./assets/Components/Login/ResetPassword.tsx";
+import MainPage from "./assets/Components/MainPage.tsx";
 
 function App() {
     const [loggedIn, setLoggedIn] = useState(false)
@@ -16,10 +19,12 @@ function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Home email={email} loggedIn={loggedIn} setLoggedIn={setLoggedIn}/>}/>
-                    <Route path="/login" element={<Login setLoggedIn={setLoggedIn} setEmail={setEmail}/>}/>
-                    <Route path="/registration" element={<Registration/>}/>
-                    <Route path="/user-profile" element={<UserProfile/>}/>
+                    <Route path="/user-profile/:userId" element={<UserProfile/>}/>
+                    <Route path="/main-page" element={<MainPage/>}/>
                     <Route path="/users" element={<UserList/>}/>
+                    <Route path="/signin" element={<SignIn/>}/>
+                    <Route path="/signup" element={<SignUp/>}/>
+                    <Route path="/reset-password/:token" element={<ResetPassword/>}/>
                 </Routes>
             </BrowserRouter>
         </div>

@@ -1,43 +1,58 @@
 package com.example.omega.web;
 
 import com.example.omega.service.GoogleAuthenticatorService;
+import com.example.omega.service.UserService;
+import com.example.omega.service.Views;
+import com.example.omega.service.dto.UserDTO;
+import com.example.omega.service.exception.BadRequestException;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.google.zxing.WriterException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 @RestController
 @RequestMapping("/google-authenticator")
 @AllArgsConstructor
+@Slf4j
 public class GoogleAuthenticatorResource {
 
-    private GoogleAuthenticatorService googleAuthenticatorService;
+    private final GoogleAuthenticatorService googleAuthenticatorService;
+
+    private final UserService userService;
 
     @GetMapping("/generate-secret-key")
     public ResponseEntity<String> generateSecretKey() {
-        String secretKey = googleAuthenticatorService.generateSecretKey();
+        var secretKey = googleAuthenticatorService.generateSecretKey();
         return ResponseEntity.ok(secretKey);
     }
 
     @GetMapping("/generate-qr-code")
     public ResponseEntity<byte[]> generateQRCode(@RequestParam String account, @RequestParam String issuer) {
-        if (account == null || issuer == null) {
-            return ResponseEntity.badRequest().body("Account and issuer are required".getBytes());
+        log.debug("Generating QR code for account {}", account);
+        var user = userService.getUserByEmail(account);
+
+        if (StringUtils.isBlank(issuer) || StringUtils.isBlank(account)) {
+            throw new BadRequestException("Account and Issuer are required!");
         }
-        String secretKey = googleAuthenticatorService.generateSecretKey();
-        String barCodeData = googleAuthenticatorService.getGoogleAuthenticatorBarCode(secretKey, account, issuer);
+
+        if (user.isEmpty()) {
+            throw new BadRequestException("This email does not exist!");
+        }
+
+        var secretKey = googleAuthenticatorService.generateSecretKey();
+        userService.updateTwoFactorSecret(user.get(), secretKey);
+        var barCodeData = googleAuthenticatorService.getGoogleAuthenticatorBarCode(secretKey, account, issuer);
         try {
-            BufferedImage qrCodeImage = googleAuthenticatorService.createQRCode(barCodeData, 200, 200);
+            var qrCodeImage = googleAuthenticatorService.createQRCode(barCodeData, 200, 200);
             var baos = new ByteArrayOutputStream();
             ImageIO.write(qrCodeImage, "png", baos);
             var qrCodeBytes = baos.toByteArray();
@@ -47,13 +62,16 @@ public class GoogleAuthenticatorResource {
         }
     }
 
-//    @GetMapping("/simulate-login")
-//    public ResponseEntity<String> simulateLogin(@RequestParam String secretKey) {
-//        var loggedIn = googleAuthenticatorService.simulateLogin(secretKey);
-//        if (loggedIn) {
-//            return ResponseEntity.ok("Login successful");
-//        } else {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid 2FA code");
-//        }
-//    }
+    @PostMapping("/verify-code")
+    public ResponseEntity<?> verifyCode(@JsonView(Views.TwoFactorSecretView.class) @RequestBody UserDTO userDTO) {
+        var twoFactorSecret = userService.getUserById(userDTO.getId()).getTwoFactorSecret();
+        var isCodeValid = googleAuthenticatorService.verifyCode(twoFactorSecret, userDTO.getTwoFactorAuthCode());
+        if (isCodeValid) {
+            userService.updateUserTwoStepVerification(userDTO.getId(), true);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid verification code!");
+        }
+    }
+
 }

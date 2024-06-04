@@ -15,7 +15,7 @@ import org.springframework.security.core.Authentication;
  * for evaluating security expressions.
  */
 public class CustomMethodSecurityExpressionHandler extends DefaultMethodSecurityExpressionHandler {
-
+    //TODO: delete?
     private ApplicationContext applicationContext;
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 

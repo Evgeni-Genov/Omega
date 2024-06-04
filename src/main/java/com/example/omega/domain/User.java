@@ -60,15 +60,15 @@ public class User extends AbstractAuditingEntity {
     private String countryOfBirth;
 
     @Column
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
     private List<AccountBalance> accountBalances;
 
     @Column
-    @OneToMany(mappedBy = "sender")
+    @OneToMany(mappedBy = "sender", fetch = FetchType.EAGER)
     private List<Transaction> outgoingTransactions;
 
     @Column
-    @OneToMany(mappedBy = "recipient")
+    @OneToMany(mappedBy = "recipient", fetch = FetchType.EAGER)
     private List<Transaction> incomingTransactions;
 
     @Column
@@ -79,11 +79,16 @@ public class User extends AbstractAuditingEntity {
     private Boolean twoFactorAuthentication;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @JoinColumn(name = "verification_code_id")
     private VerificationCode verificationCode;
 
     @Column
     private String emailVerificationToken;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private PasswordResetLink passwordResetLink;
+
+    @Column
+    private String twoFactorSecret;
 
 //    @Column
 //    @JoinColumn(unique = true)
@@ -92,6 +97,11 @@ public class User extends AbstractAuditingEntity {
     public void setVerificationCode(VerificationCode verificationCode) {
         this.verificationCode = verificationCode;
         verificationCode.setUser(this);
+    }
+
+    public void setPasswordResetLink(PasswordResetLink passwordResetLink) {
+        this.passwordResetLink = passwordResetLink;
+        passwordResetLink.setUser(this);
     }
 
 }

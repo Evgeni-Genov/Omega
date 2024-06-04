@@ -21,14 +21,14 @@ import java.util.List;
 @ToString
 public class UserDTO extends AbstractAuditingDTO {
 
-    @JsonView({Views.PasswordChangeView.class, Views.AllUsersWithDetails.class, Views.SecurityUpdateView.class})
+    @JsonView({Views.PasswordChangeView.class, Views.AllUsersWithDetails.class, Views.SecurityUpdateView.class, Views.UpdateNonCredentialView.class, Views.PasswordResetView.class, Views.TwoFactorAuthenticationView.class, Views.TwoFactorSecretView.class})
     private Long id;
 
-    @JsonView({Views.CreateView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.CreateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String username;
 
-    @JsonView({Views.CreateView.class, Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.CreateView.class, Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String email;
@@ -38,31 +38,31 @@ public class UserDTO extends AbstractAuditingDTO {
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String newEmail;
 
-    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String firstName;
 
-    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class })
+    @JsonView({Views.CreateView.class, Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String lastName;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String address;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String townOfBirth;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String countryOfBirth;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String nameTag;
 
-    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.SecurityUpdateView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
     private String phoneNumber;
@@ -74,14 +74,27 @@ public class UserDTO extends AbstractAuditingDTO {
     )
     private String password;
 
-    @JsonView({Views.PasswordChangeView.class})
+    @JsonView({Views.PasswordChangeView.class, Views.PasswordResetView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
     )
     private String newPassword;
 
+    @JsonView({Views.PasswordChangeView.class, Views.PasswordResetView.class})
+    @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
+            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
+    )
+    private String confirmNewPassword;
+
+    @JsonView({Views.TwoFactorAuthenticationView.class})
     private String emailVerificationToken;
+
+    private String twoFactorSecret;
+
+    @JsonView({Views.TwoFactorSecretView.class})
+    private String twoFactorAuthCode;
 
     @JsonView({Views.AllUsersWithDetails.class})
     @Enumerated(EnumType.STRING)
@@ -93,10 +106,10 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.AllUsersWithDetails.class})
     private Boolean enabled;
 
-    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private Boolean twoFactorAuthentication;
 
-    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private List<AccountBalance> accountBalances;
 
     @JsonView({Views.AllUsersWithDetails.class,  Views.AllUsersWithDetails.class})
@@ -104,5 +117,4 @@ public class UserDTO extends AbstractAuditingDTO {
 
     @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
     private List<Transaction> incomingTransactions;
-
 }

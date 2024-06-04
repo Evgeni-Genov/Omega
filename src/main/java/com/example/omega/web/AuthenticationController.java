@@ -8,6 +8,7 @@ import com.example.omega.config.security.payload.response.MessageResponse;
 import com.example.omega.domain.User;
 import com.example.omega.domain.UserDetailsImpl;
 import com.example.omega.mapper.UserMapper;
+import com.example.omega.repository.UserRepository;
 import com.example.omega.service.MailService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
@@ -21,6 +22,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -33,6 +35,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AuthenticationController {
 
+    private final UserRepository userRepository;
     private AuthenticationManager authenticationManager;
 
     private JwtUtils jwtUtils;
@@ -43,8 +46,15 @@ public class AuthenticationController {
 
     private MailService mailService;
 
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest request) {
+//        var userDTO =  userService.getUserById(1044L);
+//        var user =  userMapper.toEntity(userDTO);
+//        user.setPassword(bCryptPasswordEncoder.encode("Evgeni-Genov1"));
+//        userRepository.save(user);
+
         try {
             var authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
@@ -75,7 +85,8 @@ public class AuthenticationController {
                     new JwtResponse(jwt, jwtRefresh,
                             userDetailsImpl.getId(),
                             userDetailsImpl.getUsername(),
-                            roles));
+                            roles,
+                            userDetailsImpl.isTwoFactorAuthentication()));
         } catch (BadCredentialsException e) {
             throw new BadRequestException("Invalid username or password");
         }
@@ -89,7 +100,7 @@ public class AuthenticationController {
         setEmailVerificationToken(user, token);
         userService.createUser(userMapper.toDTO(user));
         var verificationLink = "http://localhost:8080/mail/verify-email?token=" + token;
-        mailService.sendAccountActivationEmail(user.getEmail(), verificationLink);
+        mailService.accountActivationEmail(user.getEmail(), verificationLink);
         return ResponseEntity.ok(new MessageResponse("SUCCESSFUL_REGISTRATION"));
     }
 

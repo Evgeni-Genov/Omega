@@ -26,6 +26,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         .findByUsername(username)
                         .orElseThrow(() -> new UsernameNotFoundException(String.format("User with username: %s not found!", username)));
 
-        return new UserDetailsImpl(user.getId(), user.getUsername(), user.getPassword(), Set.of(new SimpleGrantedAuthority(user.getRole().name())));
+        return new UserDetailsImpl(user.getId(), user.getUsername(), user.getPassword(), user.getTwoFactorAuthentication(), Set.of(new SimpleGrantedAuthority(user.getRole().name())));
     }
 }

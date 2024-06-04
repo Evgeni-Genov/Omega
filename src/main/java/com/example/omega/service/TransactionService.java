@@ -12,6 +12,8 @@ import com.example.omega.service.exception.BadRequestException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -82,6 +84,11 @@ public class TransactionService {
         log.debug("Transaction successful: {}", successfulTransactionDTO);
 
         return successfulTransactionDTO;
+    }
+
+    public Page<TransactionDTO> getAllTransactionsForAUser(Pageable pageable, Long userId) {
+        return transactionRepository.findAllByRecipientAndSender(userId, pageable)
+                .map(transactionMapper::toDTO);
     }
 
     /**

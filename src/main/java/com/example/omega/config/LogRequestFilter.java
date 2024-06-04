@@ -36,7 +36,6 @@ public class LogRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-
         final var start = System.currentTimeMillis();
 
         var headerId = request.getHeader(REQUEST_ID);

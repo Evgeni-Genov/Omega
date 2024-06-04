@@ -3,6 +3,7 @@ package com.example.omega.web;
 import com.example.omega.service.MailService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.exception.BadRequestException;
+import com.example.omega.service.util.PasswordResetLinkService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,8 @@ public class MailResource {
 
     private final UserService userService;
 
+    private final PasswordResetLinkService passwordResetLinkService;
+
     //TODO: Maybe use securityUtils.canCurrentUserEditThisData
     // User can prompt send verificationCode to another Mail?
     // @PreAuthorize ROLE_USER, ROLE_ADMIN
@@ -29,7 +32,7 @@ public class MailResource {
             throw new BadRequestException(String.format("User with email %s doesn't exist", email));
         }
 
-        mailService.sendVerificationCodeEmail(email.trim(), user);
+        mailService.verificationCodeEmail(email.trim(), user);
     }
 
     @GetMapping("/verify-email")
@@ -40,3 +43,5 @@ public class MailResource {
     }
 
 }
+
+

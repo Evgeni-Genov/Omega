@@ -6,16 +6,17 @@ import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.dto.UserDTO;
 import com.example.omega.service.exception.BadRequestException;
+import com.example.omega.service.util.PasswordResetLinkService;
 import com.example.omega.service.util.UserServiceUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
 import java.util.Optional;
 
 
@@ -35,6 +36,8 @@ public class UserService {
 
     private final VerificationCodeService verificationCodeService;
 
+    private final PasswordResetLinkService passwordResetLinkService;
+
     /**
      * Creates a new user.
      *
@@ -42,7 +45,6 @@ public class UserService {
      * @return userCreateDTO           The created user.
      * @throws BadRequestException If the user is invalid or the username or email is already taken.
      */
-    //TODO: email code verification
     public UserDTO createUser(UserDTO userCreateDTO) {
         log.debug("Validating the User data!");
         var user = userMapper.toEntity(userCreateDTO);
@@ -137,9 +139,9 @@ public class UserService {
         log.debug("Request to User: {}", userDTO);
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());
         userServiceUtil.fieldsToBeUpdated(userDTO, user);
-        var updatedUser = userMapper.toEntity(userDTO);
-        userRepository.save(updatedUser);
-        return userDTO;
+        userMapper.updateUserFromDto(userDTO, user);
+        var updatedUser = userRepository.save(user);
+        return userMapper.toDTO(updatedUser);
     }
 
     /**
@@ -160,32 +162,13 @@ public class UserService {
         return userMapper.toDTO(user.get());
     }
 
-    /**
-     * Enable two-step verification for a user.
-     *
-     * @param userId The ID of the user to enable two-step verification for.
-     */
-    public void enableUserTwoStepVerification(Long userId) {
-        log.debug("Request to enable two-step verification for User with ID: {}", userId);
+    public void updateUserTwoStepVerification(Long userId, boolean twoFactorAuthenticationFlag) {
+        log.debug("Request to update two-step verification for User with ID: {} to {}", userId, twoFactorAuthenticationFlag);
         var user = userServiceUtil.validateAndGetUser(userId);
-        user.setTwoFactorAuthentication(true);
+        user.setTwoFactorAuthentication(twoFactorAuthenticationFlag);
         userRepository.save(user);
         userMapper.toDTO(user);
     }
-
-    /**
-     * Disable two-step verification for a user.
-     *
-     * @param userId The ID of the user to enable two-step verification for.
-     */
-    public void disableUserTwoStepVerification(Long userId) {
-        log.debug("Request to disable two-step verification for User with ID: {}", userId);
-        var user = userServiceUtil.validateAndGetUser(userId);
-        user.setTwoFactorAuthentication(false);
-        userRepository.save(user);
-        userMapper.toDTO(user);
-    }
-
 
     /**
      * Change the password for a user identified by their user ID. We receive a userDTO,
@@ -216,6 +199,22 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
+    public UserDTO passwordReset(User user, UserDTO userDTO) {
+        log.debug("Request to reset password!");
+
+        if (StringUtils.isNotBlank(userDTO.getNewPassword()) &&
+                StringUtils.isNotBlank(userDTO.getConfirmNewPassword()) &&
+                !userDTO.getNewPassword().equals(userDTO.getConfirmNewPassword())) {
+            throw new BadRequestException("Passwords don't match!");
+        }
+
+        user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+        userRepository.save(user);
+
+        log.debug("Password reset was successful!");
+        return userMapper.toDTO(user);
+    }
+
     //TODO: what if we want to change only the 2FA and not the email, same goes for phone number
     // if the newEmail is empty and the email is null -> email becomes null -> NullPointerException
     public UserDTO updateUserSecurityData(UserDTO userDTO) {
@@ -225,14 +224,6 @@ public class UserService {
             userDTO.setNewEmail(user.getEmail());
         } else {
             changeEmail(userDTO);
-        }
-
-        if (!Objects.equals(user.getTwoFactorAuthentication(), userDTO.getTwoFactorAuthentication())) {
-            if (Boolean.FALSE.equals(user.getTwoFactorAuthentication())) {
-                enableUserTwoStepVerification(userDTO.getId());
-            } else {
-                disableUserTwoStepVerification(userDTO.getId());
-            }
         }
 
         return userDTO;
@@ -279,6 +270,19 @@ public class UserService {
         return verificationCode.getCode();
     }
 
+    public String returnSavedPasswordResetLink(Optional<User> optionalUser) {
+        if (optionalUser.isEmpty()) {
+            throw new BadRequestException("User not found!");
+        }
+        var user = optionalUser.get();
+        var passwordResetLink = passwordResetLinkService.generatePasswordResetLink(user);
+
+        user.setPasswordResetLink(passwordResetLink);
+        userRepository.save(user);
+
+        return passwordResetLink.getToken();
+    }
+
     /**
      * Verifies the provided code against the verification code associated with the user.
      *
@@ -299,6 +303,16 @@ public class UserService {
         }
 
         return false;
+    }
+
+    public boolean isTwoFactorAuthenticationEnabled(String username) {
+        return userRepository.isTwoFactorAuthenticationEnabled(username);
+    }
+
+    public void updateTwoFactorSecret(User user, String secretKey) {
+        user.setTwoFactorSecret(secretKey);
+        userRepository.save(user);
+        log.debug("Updated Two-Factor Secret for User ID: {}", user.getId());
     }
 
 

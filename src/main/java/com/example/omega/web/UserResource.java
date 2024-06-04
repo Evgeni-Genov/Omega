@@ -1,9 +1,12 @@
 package com.example.omega.web;
 
+import com.example.omega.service.MailService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
 import com.example.omega.service.dto.UserDTO;
+import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.PaginationUtil;
+import com.example.omega.service.util.PasswordResetLinkService;
 import com.example.omega.service.util.SecurityUtils;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,15 +31,19 @@ public class UserResource {
 
     private final SecurityUtils securityUtils;
 
+    private final PasswordResetLinkService passwordResetLinkService;
+
+    private final MailService mailService;
+
     //TODO: deleting done by ROLE_ADMIN, ROLE_USER if the it's his own profile, add an additional check if the user has money over 0, to be sure the user wont lose money
-    //TODO: company getting the deleted money??
     //TODO: good policy to suggest the user to send to someone or spend his money
     //TODO: maybe after when having 5 USD user can delete but again with the prompt if user agrees he can delete it.
 
     @PatchMapping("/update/profile")
     @Operation(summary = "Update User non-credential information.")
-    @JsonView({Views.UpdateNonCredentialView.class})
-    public ResponseEntity<UserDTO> updateUserNonCredentialInformation(Principal principal, @RequestBody UserDTO userDTO) {
+    @JsonView(Views.UpdateNonCredentialView.class)
+    public ResponseEntity<UserDTO> updateUserNonCredentialInformation(Principal principal,
+                                                                      @JsonView(Views.UpdateNonCredentialView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the non-credential data of a user!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.partiallyUpdateUserNonCredentialInformation(userDTO);
@@ -45,8 +52,9 @@ public class UserResource {
 
     @PutMapping("/update/security")
     @Operation(summary = "Update User security data.")
-    @JsonView({Views.SecurityUpdateView.class})
-    public ResponseEntity<UserDTO> updateUserSecurityData(Principal principal, @RequestBody UserDTO userDTO) {
+    @JsonView(Views.SecurityUpdateView.class)
+    public ResponseEntity<UserDTO> updateUserSecurityData(Principal principal,
+                                                          @JsonView(Views.SecurityUpdateView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the security data of a user!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.updateUserSecurityData(userDTO);
@@ -55,7 +63,7 @@ public class UserResource {
 
     @PutMapping("/update/password")
     @Operation(summary = "Update User password.")
-    @JsonView({Views.PasswordChangeView.class})
+    @JsonView(Views.PasswordChangeView.class)
     public ResponseEntity<UserDTO> updateUserPassword(Principal principal,
                                                       @JsonView(Views.PasswordChangeView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the password of a user!", principal.getName());
@@ -64,7 +72,7 @@ public class UserResource {
         return ResponseEntity.ok().body(updatedUser);
     }
 
-    @GetMapping("/user/{nameTag}")
+    @GetMapping("/search-user/{nameTag}")
     @Operation(summary = "Get user by nameTag.")
     @JsonView(Views.SearchView.class)
     public ResponseEntity<UserDTO> getUserByNameTag(@PathVariable String nameTag) {
@@ -86,20 +94,51 @@ public class UserResource {
     @GetMapping("/user/{id}")
     @Operation(summary = "Get user by id.")
     @JsonView(Views.PersonalView.class)
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id, Principal principal){
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id, Principal principal) {
         log.debug("User: {} is trying to read user by id!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, id);
         var user = userService.getUserById(id);
         return ResponseEntity.ok().body(user);
     }
 
-    @DeleteMapping("/users/{userId}")
+    @DeleteMapping("/delete-user/{userId}")
     @Operation(summary = "Delete a user by their unique user ID.")
     public ResponseEntity<Void> deleteUserById(Principal principal, @PathVariable Long userId) {
         log.debug("User: {} is trying to delete a user by id!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userId);
         userService.deleteById(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public void passwordReset(@RequestParam String email) {
+        var user = userService.getUserByEmail(email);
+
+        if (user.isEmpty()) {
+            throw new BadRequestException(String.format("User with email %s doesn't exist!", email));
+        }
+
+        mailService.passwordResetEmail(email.trim(), user);
+    }
+
+    @PostMapping("/reset-password/confirm")
+    @JsonView(Views.PasswordResetView.class)
+    public void confirmPasswordReset(@RequestParam String token,
+                                     @JsonView(Views.PasswordResetView.class) @RequestBody UserDTO userDTO) {
+        var passwordResetLink = passwordResetLinkService.validateToken(token);
+
+        if (passwordResetLink == null || passwordResetLinkService.isExpired(passwordResetLink)) {
+            throw new BadRequestException("Invalid or expired password reset token");
+        }
+
+        userService.passwordReset(passwordResetLink.getUser(), userDTO);
+    }
+
+    @PostMapping("/update-2fa")
+    public ResponseEntity<?> updateTwoFactorAuthentication(@RequestBody UserDTO userDTO) {
+        userService.updateUserTwoStepVerification(userDTO.getId(), userDTO.getTwoFactorAuthentication());
+        return ResponseEntity.ok().body("Two-factor authentication " + (Boolean.TRUE.equals(userDTO.getTwoFactorAuthentication()) ? "enabled" : "disabled"));
     }
 
 }

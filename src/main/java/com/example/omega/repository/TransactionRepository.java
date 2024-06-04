@@ -5,6 +5,8 @@ import com.example.omega.domain.User;
 import com.example.omega.domain.enumeration.TransactionStatus;
 import jakarta.transaction.Transactional;
 import org.javers.spring.annotation.JaversSpringDataAuditable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +28,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findAllBySender(User sender);
 
     List<Transaction> findAllByTransactionStatus(TransactionStatus transactionStatus);
+
+    @Query(value = "SELECT * FROM Transaction WHERE sender_id = :userId OR recipient_id = :userId", nativeQuery = true)
+    Page<Transaction> findAllByRecipientAndSender(@Param("userId") Long userId, Pageable pageable);
 }

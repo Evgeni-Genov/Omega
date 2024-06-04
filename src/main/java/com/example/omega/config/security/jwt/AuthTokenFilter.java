@@ -43,8 +43,13 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("Authenticating request!");
-        try {
 
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
             var jwtAccessToken = parseJwtAccessToken(request);
             if (jwtAccessToken == null && !isSignUpRequest(request)) {
                 log.error("Missing access token. Rejecting!");

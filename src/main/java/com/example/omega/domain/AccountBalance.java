@@ -22,7 +22,7 @@ public class AccountBalance {
     private Long id;
 
     @JoinColumn(name = "user_id")
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private User user;
 
     @Column

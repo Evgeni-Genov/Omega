@@ -17,6 +17,8 @@ public class UserDetailsImpl implements UserDetails {
 
     private String password;
 
+    private boolean twoFactorAuthentication;
+
     private Collection<? extends GrantedAuthority> authorities;
 
 //    private boolean accountNonExpired;
@@ -60,5 +62,9 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public boolean isTwoFactorAuthentication() {
+        return twoFactorAuthentication;
     }
 }
