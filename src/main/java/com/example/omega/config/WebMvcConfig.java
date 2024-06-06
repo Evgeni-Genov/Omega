@@ -56,11 +56,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addMapping("/user/reset-password").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
         registry.addMapping("/user/reset-password/confirm/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
         registry.addMapping("/user/reset-password/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/auth/*").allowedOrigins(cors);
-        registry.addMapping("/user/*").allowedOrigins(cors);
-        registry.addMapping("/google-authenticator/*").allowedOrigins(cors);
-        registry.addMapping("/account-balance/account-balances/user/*").allowedOrigins(cors);
-        registry.addMapping("/transaction/all-transactions/*").allowedOrigins(cors);
+        registry.addMapping("/user/search-user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/auth/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/google-authenticator/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/account-balance/account-balances/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/transaction/all-transactions/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+        registry.addMapping("/transaction/send-funds").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
         registry.addMapping("http://localhost:5173").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
         registry.addMapping("http://localhost:5173/").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
     }

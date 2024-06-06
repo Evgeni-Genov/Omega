@@ -22,6 +22,8 @@ public class TransactionDTO extends AbstractAuditingDTO {
 
     private Long id;
 
+    private String userNameTag;
+
     @NotNull
     private Long senderId;
 

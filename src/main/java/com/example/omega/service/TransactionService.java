@@ -41,18 +41,12 @@ public class TransactionService {
         return transactionMapper.toDTO(transactionRepository.saveAndFlush(transaction));
     }
 
-    /**
-     * Sends money from one user to another.
-     *
-     * @param transactionDTO The DTO representing the transaction details.
-     * @return The DTO representing the updated transaction details.
-     */
     @Transactional
     public TransactionDTO sendMoney(TransactionDTO transactionDTO) {
-        log.debug("Sending Money to user with id: {} from user with id: {}", transactionDTO.getRecipientId(), transactionDTO.getSenderId());
+        log.debug("Sending Money to user with nameTag: {} from user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
 
         var sender = userService.getUserById(transactionDTO.getSenderId());
-        var recipient = userService.getUserById(transactionDTO.getRecipientId());
+        var recipient = userService.getUserByNameTag(transactionDTO.getUserNameTag());
 
         var senderBalance = findAccountBalance(sender, transactionDTO.getCurrency());
         var transferAmount = transactionDTO.getAmount();
@@ -64,20 +58,17 @@ public class TransactionService {
             return failedTransactionDTO;
         }
 
+        transactionDTO.setRecipientId(recipient.getId());
         transactionDTO.setTransactionStatus(TransactionStatus.PROCESSING);
         var inProgressTransactionDTO = saveTransaction(transactionDTO);
         log.debug("Transaction in progress: {}", inProgressTransactionDTO);
 
         senderBalance.setBalance(senderBalance.getBalance().subtract(transferAmount));
-
-        var updatedSenderBalance = updateAccountBalance(senderBalance);
-        log.debug("Sender balance updated: {}", updatedSenderBalance);
+        updateAccountBalance(senderBalance);
 
         var recipientBalance = findAccountBalance(recipient, transactionDTO.getCurrency());
         recipientBalance.setBalance(recipientBalance.getBalance().add(transferAmount));
-
-        var updatedRecipientBalance = updateAccountBalance(recipientBalance);
-        log.debug("Recipient balance updated: {}", updatedRecipientBalance);
+        updateAccountBalance(recipientBalance);
 
         transactionDTO.setTransactionStatus(TransactionStatus.SUCCESSFUL);
         var successfulTransactionDTO = saveTransaction(transactionDTO);

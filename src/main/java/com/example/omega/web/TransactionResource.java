@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -30,8 +29,8 @@ public class TransactionResource {
 
     @PostMapping("/send-funds")
     @Operation(summary = "Send funds")
-    public ResponseEntity<TransactionDTO> sendMoney(Principal principal, @RequestBody TransactionDTO transactionDTO) {
-        log.debug("User: {} is trying to send funds!", principal.getName());
+    public ResponseEntity<TransactionDTO> sendMoney(@RequestBody TransactionDTO transactionDTO) {
+        log.debug("User is trying to send funds!");
         var createdTransactionDTO = transactionService.sendMoney(transactionDTO);
         return ResponseEntity.ok().body(createdTransactionDTO);
     }

@@ -17,7 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -142,6 +144,24 @@ public class UserService {
         userMapper.updateUserFromDto(userDTO, user);
         var updatedUser = userRepository.save(user);
         return userMapper.toDTO(updatedUser);
+    }
+
+    /**
+     * Retrieves a list of users based on their nameTag.
+     *
+     * @param nameTag The nameTag to search for users.
+     * @return A list of UserDTO objects that contain the specified nameTag.
+     * @throws BadRequestException If no users with the given nameTag are found.
+     */
+    public List<UserDTO> getUsersByNameTagContaining(String nameTag) {
+        log.debug("Request to get users by nameTag containing: {}", nameTag);
+        var users = userRepository.findByNameTagContainingIgnoreCase(nameTag);
+
+        if (users.isEmpty()) {
+            throw new BadRequestException("Can't find users with nameTag containing: " + nameTag);
+        }
+
+        return users.stream().map(userMapper::toDTO).collect(Collectors.toList());
     }
 
     /**

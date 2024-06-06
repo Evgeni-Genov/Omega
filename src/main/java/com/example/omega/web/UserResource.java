@@ -73,11 +73,11 @@ public class UserResource {
     }
 
     @GetMapping("/search-user/{nameTag}")
-    @Operation(summary = "Get user by nameTag.")
+    @Operation(summary = "Get users by nameTag containing.")
     @JsonView(Views.SearchView.class)
-    public ResponseEntity<UserDTO> getUserByNameTag(@PathVariable String nameTag) {
-        var user = userService.getUserByNameTag(nameTag);
-        return ResponseEntity.ok().body(user);
+    public ResponseEntity<List<UserDTO>> getUsersByNameTag(@PathVariable String nameTag) {
+        var users = userService.getUsersByNameTagContaining(nameTag);
+        return ResponseEntity.ok().body(users);
     }
 
     @GetMapping("/users")
