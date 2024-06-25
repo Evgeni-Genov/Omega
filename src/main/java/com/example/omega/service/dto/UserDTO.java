@@ -21,19 +21,25 @@ import java.util.List;
 @ToString
 public class UserDTO extends AbstractAuditingDTO {
 
-    @JsonView({Views.PasswordChangeView.class, Views.AllUsersWithDetails.class, Views.SecurityUpdateView.class, Views.UpdateNonCredentialView.class, Views.PasswordResetView.class, Views.TwoFactorAuthenticationView.class, Views.TwoFactorSecretView.class})
+    @JsonView({Views.UpdatePasswordView.class, Views.AllUsersWithDetails.class, Views.UpdateEmailView.class,
+            Views.UpdateNonCredentialView.class, Views.PasswordResetView.class, Views.TwoFactorAuthenticationView.class,
+            Views.TwoFactorSecretView.class, Views.UpdateUsernameView.class, Views.UpdatePhoneNumberView.class})
     private Long id;
 
-    @JsonView({Views.CreateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
+    @JsonView({Views.CreateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class, Views.UpdateUsernameView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String username;
 
-    @JsonView({Views.CreateView.class, Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
+    @JsonView({Views.UpdateUsernameView.class})
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
+    private String newUsername;
+
+    @JsonView({Views.CreateView.class, Views.UpdateEmailView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String email;
 
-    @JsonView({Views.CreateView.class, Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.CreateView.class, Views.UpdateEmailView.class, Views.AllUsersWithDetails.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     @Pattern(regexp = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")
     private String newEmail;
@@ -62,26 +68,31 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String nameTag;
 
-    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.SecurityUpdateView.class})
+    @JsonView({Views.AllUsersWithDetails.class, Views.UpdatePhoneNumberView.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
-    @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
+    @Pattern(regexp = "^\\+\\d{1,3}\\d{1,14}(\\s\\d{1,13})?$", message = "Phone number must be a valid international number starting with '+'")
     private String phoneNumber;
 
-    @JsonView({Views.CreateView.class, Views.PasswordChangeView.class})
+    @JsonView({Views.AllUsersWithDetails.class, Views.UpdatePhoneNumberView.class})
+    @JsonDeserialize(using = StringNormalizationDeserializer.class)
+    @Pattern(regexp = "^\\+\\d{1,3}\\d{1,14}(\\s\\d{1,13})?$", message = "Phone number must be a valid international number starting with '+'")
+    private String newPhoneNumber;
+
+    @JsonView({Views.CreateView.class, Views.UpdatePasswordView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
     )
     private String password;
 
-    @JsonView({Views.PasswordChangeView.class, Views.PasswordResetView.class})
+    @JsonView({Views.UpdatePasswordView.class, Views.PasswordResetView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
     )
     private String newPassword;
 
-    @JsonView({Views.PasswordChangeView.class, Views.PasswordResetView.class})
+    @JsonView({Views.UpdatePasswordView.class, Views.PasswordResetView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
             message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
@@ -96,6 +107,9 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.TwoFactorSecretView.class})
     private String twoFactorAuthCode;
 
+    @JsonView({Views.PersonalView.class})
+    private String avatar;
+
     @JsonView({Views.AllUsersWithDetails.class})
     @Enumerated(EnumType.STRING)
     private Roles role;
@@ -106,7 +120,7 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.AllUsersWithDetails.class})
     private Boolean enabled;
 
-    @JsonView({Views.SecurityUpdateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
+    @JsonView({Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private Boolean twoFactorAuthentication;
 
     @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})

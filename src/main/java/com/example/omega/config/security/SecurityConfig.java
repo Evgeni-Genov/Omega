@@ -3,7 +3,6 @@ package com.example.omega.config.security;
 import com.example.omega.config.security.jwt.AuthTokenFilter;
 import com.example.omega.service.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
-import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -64,7 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/transaction/**").permitAll()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(withDefaults())
                 .logout(logout -> logout.deleteCookies("remove")
@@ -123,8 +122,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public StrictHttpFirewall httpFirewall(ErrorAttributes errorAttributes) {
-        StrictHttpFirewall firewall = new StrictHttpFirewall();
+    public StrictHttpFirewall httpFirewall() {
+        var firewall = new StrictHttpFirewall();
         firewall.setAllowedHttpMethods(Arrays.asList("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"));
         return firewall;
     }

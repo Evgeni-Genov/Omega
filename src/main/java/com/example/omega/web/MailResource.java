@@ -32,7 +32,7 @@ public class MailResource {
             throw new BadRequestException(String.format("User with email %s doesn't exist", email));
         }
 
-        mailService.verificationCodeEmail(email.trim(), user);
+        mailService.verificationCodeEmail(email.trim(), user.get());
     }
 
     @GetMapping("/verify-email")

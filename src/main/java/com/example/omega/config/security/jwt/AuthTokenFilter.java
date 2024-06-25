@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -72,37 +73,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    //TODO: this fixes the registration error logs
-//    @Override
-//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-//        log.info("Authenticating request!");
-//        try {
-//            if (isSignUpRequest(request)){
-//                filterChain.doFilter(request, response);
-//                return;
-//            }
-//            var jwtAccessToken = parseJwtAccessToken(request);
-//            if (jwtAccessToken == null) {
-//                log.error("Missing access token. Rejecting!");
-//                filterChain.doFilter(request, response);
-//                return;
-//            }
-//            if (jwtUtils.validateJwtToken(jwtAccessToken)) {
-//                var username = jwtUtils.getUsernameFromJwtToken(jwtAccessToken);
-//                var userDetails = userDetailsService.loadUserByUsername(username);
-//                var passwordAuthenticationToken =
-//                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-//                passwordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-//                SecurityContextHolder.getContext().setAuthentication(passwordAuthenticationToken);
-//            }
-//        } catch (Exception e) {
-//            log.error("Cannot set user authentication: {}", e.getMessage());
-//        }
-//        filterChain.doFilter(request, response);
-//    }
-
     /**
      * Parses the JWT token from the HTTP request's AUTHORIZATION header.
      *
@@ -110,7 +80,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @return The JWT token if found in the header, or null if not found.
      */
     private String parseJwtAccessToken(HttpServletRequest request) {
-        var authorizationHeader = request.getHeader("AUTHORIZATION");
+        var authorizationHeader = request.getHeader("Authorization");
         if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer")) {
             return authorizationHeader.substring(7);
         }
@@ -124,7 +94,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @return {@code true} if the request is a sign-in request, {@code false} otherwise.
      */
     private boolean isSignUpRequest(HttpServletRequest request) {
-        return request.getRequestURI().endsWith("/auth/signup") && request.getMethod().equals("POST");
+        return request.getRequestURI().endsWith("/auth/signup") && request.getMethod().equals(HttpMethod.POST);
     }
 }
 

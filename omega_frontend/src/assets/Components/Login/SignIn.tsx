@@ -19,7 +19,7 @@ import {
     Typography
 } from '@mui/material';
 import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
-import axiosInstance from "../../../AxiosConfiguration";
+import axiosInstance from "../Config/AxiosConfiguration.ts";
 import omegaLogo from '../Assets/omega.png';
 
 const defaultTheme = createTheme({
@@ -124,7 +124,7 @@ export default function SignIn() {
         }
 
         if (password === '') {
-            setPasswordError('Please enter a password');
+            setPasswordError('Please enter a password!');
             return;
         }
 
@@ -132,14 +132,11 @@ export default function SignIn() {
             const response = await axiosInstance.post('/auth/signin', {username, password});
             const {id, token, refreshToken, twoFactorAuthentication: twoFactorEnabled} = response.data;
 
-            console.log('Response data:', response.data);
-
             if (twoFactorEnabled) {
                 setUserId(id);
                 setToken(token);
                 setRefreshToken(refreshToken);
                 setOpen(true);
-                console.log('Two-factor authentication is enabled, opening dialog...');
             } else {
                 completeLogin(id, token, refreshToken);
             }
@@ -156,7 +153,7 @@ export default function SignIn() {
     const completeLogin = (userId, token, refreshToken) => {
         localStorage.setItem('TOKEN', token);
         localStorage.setItem('REFRESH_TOKEN', refreshToken);
-        localStorage.setItem('USER_ID', userId); // Save userId in localStorage
+        localStorage.setItem('USER_ID', userId);
 
         if (rememberMe) {
             localStorage.setItem('rememberedUsername', username);

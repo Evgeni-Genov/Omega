@@ -14,7 +14,6 @@ import java.io.IOException;
 public class StringNormalizationDeserializer extends StdDeserializer<String> implements ContextualDeserializer {
 
     private Integer start;
-
     private Integer end;
 
     public StringNormalizationDeserializer() {

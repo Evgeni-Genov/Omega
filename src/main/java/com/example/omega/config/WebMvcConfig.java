@@ -16,6 +16,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
+import static com.example.omega.service.util.Constants.*;
+
 @EnableWebMvc
 @EnableScheduling
 @Configuration
@@ -51,19 +53,25 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/user/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
-        registry.addMapping("/user/update/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/user/reset-password").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/user/reset-password/confirm/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/user/reset-password/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/user/search-user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/auth/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/google-authenticator/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/account-balance/account-balances/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/transaction/all-transactions/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("/transaction/send-funds").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
-        registry.addMapping("http://localhost:5173").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
-        registry.addMapping("http://localhost:5173/").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+        //TODO: remove when sure that everything works
+//        registry.addMapping("/user/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+//        registry.addMapping("/user/avatar/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+//        registry.addMapping("/user/update/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/user/reset-password").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/user/reset-password/confirm/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/user/reset-password/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/user/search-user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/account-balance/account-balances/user/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/transaction/all-transactions/*").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/transaction/send-funds").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("/transaction/add-funds").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE", "PATCH");
+//        registry.addMapping("http://localhost:5173").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+//        registry.addMapping("http://localhost:5173/").allowedOrigins(cors).allowedMethods("OPTIONS", "GET", "POST", "PUT", "DELETE");
+
+        registry.addMapping(AUTH).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping(USER).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping(GOOGLE_AUTHENTICATOR).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping(ACCOUNT_BALANCE).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping(TRANSACTION).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
     }
 }

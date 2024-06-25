@@ -37,6 +37,17 @@
                         incrementBy="1"/>
     </changeSet>
 
+    <!-- Manually refactoring database -->
+
+    <changeSet id="add-column-is_expense-to-table" author="egenov">
+        <comment>Add new column is_expense to table transaction</comment>
+        <addColumn tableName="transaction">
+            <column name="is_expense" type="boolean">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
     <!-- Add foreign key constraints here -->
 
     <changeSet id="add-foreign-key-sender" author="admin">

@@ -19,13 +19,9 @@ public class MailService {
 
     @Value("${spring.mail.username}")
     private String sender;
-
     private final JavaMailSender emailSender;
-
     private final UserService userService;
-
     private final UserRepository userRepository;
-
     private final PasswordResetLinkService passwordResetLinkService;
 
     public MailService(JavaMailSender emailSender,
@@ -46,7 +42,7 @@ public class MailService {
      * @param recipient the recipient's email address
      * @param user      the optional user for which the verification code is generated
      */
-    public void verificationCodeEmail(String recipient, Optional<User> user) {
+    public void verificationCodeEmail(String recipient, User user) {
         var subject = "Verification Code";
         var verificationCode = userService.returnSavedVerificationCode(user);
         log.debug("Sending email to: {} with verification code {}.", recipient, verificationCode);

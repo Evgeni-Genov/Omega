@@ -48,4 +48,7 @@ public class Transaction extends AbstractAuditingEntity{
     @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
 
+    @Column
+    private Boolean isExpense;
+
 }

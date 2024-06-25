@@ -29,6 +29,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findAllByTransactionStatus(TransactionStatus transactionStatus);
 
-    @Query(value = "SELECT * FROM Transaction WHERE sender_id = :userId OR recipient_id = :userId", nativeQuery = true)
+    @Query(value = "SELECT transaction FROM Transaction transaction " +
+            "WHERE transaction.sender.id = :userId OR transaction.recipient.id = :userId " +
+            "ORDER BY transaction.createdDate DESC")
     Page<Transaction> findAllByRecipientAndSender(@Param("userId") Long userId, Pageable pageable);
+
+    Page<Transaction> findAllByCreatedDate(TransactionStatus transactionStatus, Pageable pageable);
+
+    Page<Transaction> findAllByCreatedDateOrderByCreatedDateDesc(TransactionStatus transactionStatus, Pageable pageable);
 }

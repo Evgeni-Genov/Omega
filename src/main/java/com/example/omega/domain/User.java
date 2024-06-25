@@ -41,7 +41,7 @@ public class User extends AbstractAuditingEntity {
     private String nameTag;
 
     @Column
-    @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
+    @Pattern(regexp = "^\\+\\d{1,3}\\d{1,14}(\\s\\d{1,13})?$", message = "Phone number must be a valid international number starting with '+'")
     private String phoneNumber;
 
     @Column
@@ -89,6 +89,9 @@ public class User extends AbstractAuditingEntity {
 
     @Column
     private String twoFactorSecret;
+
+    @Column
+    private String avatar;
 
 //    @Column
 //    @JoinColumn(unique = true)

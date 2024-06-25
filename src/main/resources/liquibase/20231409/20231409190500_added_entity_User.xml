@@ -41,6 +41,7 @@
                         incrementBy="1"/>
     </changeSet>
 
+    <!-- Manually refactoring database -->
     <changeSet id="add-column-email_verification_token-to-table" author="egenov">
         <comment>Add new column email verification token to table user</comment>
         <addColumn tableName="user">
@@ -56,6 +57,16 @@
             </column>
         </addColumn>
     </changeSet>
+
+    <changeSet id="add-column-avatar-to-table" author="egenov">
+        <comment>Add new column avatar to table user</comment>
+        <addColumn tableName="user">
+            <column name="avatar" type="varchar(255)">
+            </column>
+        </addColumn>
+    </changeSet>
+
+
 
     <!-- Add foreign key constraints here -->
     <changeSet id="add-verification-code-foreign-key" author="egenov">

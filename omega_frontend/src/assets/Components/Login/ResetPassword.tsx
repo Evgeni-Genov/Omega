@@ -2,8 +2,8 @@ import React, {useState} from 'react';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {Avatar, Box, Button, Container, CssBaseline, TextField, Typography} from '@mui/material';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
-import omegaLogo from '../Assets/omega.png'; // Correct the import path
-import axiosInstance from '../../../AxiosConfiguration';
+import omegaLogo from '../Assets/omega.png';
+import axiosInstance from '../Config/AxiosConfiguration.ts';
 
 const defaultTheme = createTheme({
     palette: {

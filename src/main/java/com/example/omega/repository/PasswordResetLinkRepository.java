@@ -12,10 +12,8 @@ import java.util.Optional;
 @Repository
 public interface PasswordResetLinkRepository extends JpaRepository<PasswordResetLink, Long> {
 
-//    Optional<PasswordResetLink> findByToken(String token);
-
-    @Query("SELECT p FROM PasswordResetLink p WHERE p.token = :token")
-    Optional<PasswordResetLink> findByToken(@Param("token") String token);
+    @Query("SELECT p FROM PasswordResetLink p WHERE p.token LIKE %:token%")
+    Optional<PasswordResetLink> findByTokenContaining(@Param("token") String token);
 
     void deleteByExpirationTimeBefore(Instant expirationTime);
 }

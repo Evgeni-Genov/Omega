@@ -8,18 +8,26 @@ import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.PaginationUtil;
 import com.example.omega.service.util.PasswordResetLinkService;
 import com.example.omega.service.util.SecurityUtils;
+import com.example.omega.service.util.UserServiceUtil;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
+
+import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
 @AllArgsConstructor
 @RestController
@@ -28,11 +36,9 @@ import java.util.List;
 public class UserResource {
 
     private final UserService userService;
-
+    private final UserServiceUtil userServiceUtil;
     private final SecurityUtils securityUtils;
-
     private final PasswordResetLinkService passwordResetLinkService;
-
     private final MailService mailService;
 
     //TODO: deleting done by ROLE_ADMIN, ROLE_USER if the it's his own profile, add an additional check if the user has money over 0, to be sure the user wont lose money
@@ -50,22 +56,22 @@ public class UserResource {
         return ResponseEntity.ok().body(updatedUser);
     }
 
-    @PutMapping("/update/security")
-    @Operation(summary = "Update User security data.")
-    @JsonView(Views.SecurityUpdateView.class)
-    public ResponseEntity<UserDTO> updateUserSecurityData(Principal principal,
-                                                          @JsonView(Views.SecurityUpdateView.class) @RequestBody UserDTO userDTO) {
+    @PutMapping("/update/email")
+    @Operation(summary = "Update User email.")
+    @JsonView(Views.UpdateEmailView.class)
+    public ResponseEntity<UserDTO> updateUserEmail(Principal principal,
+                                                   @JsonView(Views.UpdateEmailView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the security data of a user!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
-        var updatedUser = userService.updateUserSecurityData(userDTO);
+        var updatedUser = userService.updateUserEmail(userDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
     @PutMapping("/update/password")
     @Operation(summary = "Update User password.")
-    @JsonView(Views.PasswordChangeView.class)
+    @JsonView(Views.UpdatePasswordView.class)
     public ResponseEntity<UserDTO> updateUserPassword(Principal principal,
-                                                      @JsonView(Views.PasswordChangeView.class) @RequestBody UserDTO userDTO) {
+                                                      @JsonView(Views.UpdatePasswordView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update the password of a user!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.changePassword(userDTO);
@@ -113,6 +119,7 @@ public class UserResource {
 
     @PostMapping("/reset-password")
     public void passwordReset(@RequestParam String email) {
+        log.debug("User: {} is trying to reset the password!", email);
         var user = userService.getUserByEmail(email);
 
         if (user.isEmpty()) {
@@ -126,6 +133,7 @@ public class UserResource {
     @JsonView(Views.PasswordResetView.class)
     public void confirmPasswordReset(@RequestParam String token,
                                      @JsonView(Views.PasswordResetView.class) @RequestBody UserDTO userDTO) {
+        log.debug("Confirm password reset!");
         var passwordResetLink = passwordResetLinkService.validateToken(token);
 
         if (passwordResetLink == null || passwordResetLinkService.isExpired(passwordResetLink)) {
@@ -137,8 +145,62 @@ public class UserResource {
 
     @PostMapping("/update-2fa")
     public ResponseEntity<?> updateTwoFactorAuthentication(@RequestBody UserDTO userDTO) {
+        log.debug("User: {} is trying to update two-factor authentication.", userDTO.getEmail());
         userService.updateUserTwoStepVerification(userDTO.getId(), userDTO.getTwoFactorAuthentication());
         return ResponseEntity.ok().body("Two-factor authentication " + (Boolean.TRUE.equals(userDTO.getTwoFactorAuthentication()) ? "enabled" : "disabled"));
     }
 
+    @PostMapping("/upload-avatar")
+    public ResponseEntity<UserDTO> uploadAvatar(@RequestParam("file") MultipartFile file, @RequestParam("userId") Long userId, Principal principal) {
+        log.debug("User: {} is trying to upload avatar.", principal.getName());
+        securityUtils.canCurrentUserAccessThisData(principal, userId);
+        var updatedUser = userService.updateUserAvatar(userId, file);
+        return ResponseEntity.ok().body(updatedUser);
+    }
+
+    @GetMapping("/avatar/{filename:.+}")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable String filename) {
+        log.debug("REST request to access avatar: {}", filename);
+        try {
+            var filePath = Paths.get(USER_PROFILE_DIR).resolve(filename).normalize();
+            var fileContent = Files.readAllBytes(filePath);
+
+            var contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filePath.getFileName().toString() + "\"")
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new BadRequestException("Error retrieving file: " + filename);
+        }
+    }
+
+    @PutMapping("/update/number")
+    @JsonView(Views.UpdatePhoneNumberView.class)
+    public ResponseEntity<UserDTO> updatePhoneNumber(Principal principal,
+                                                  @JsonView(Views.UpdatePhoneNumberView.class) @RequestBody UserDTO userDTO){
+        log.debug("User: {} is trying to update phone number!", principal.getName());
+        securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
+        var updatedUser = userService.updatePhoneNumber(userDTO);
+        return ResponseEntity.ok().body(updatedUser);
+    }
+
+//    @PutMapping("/update/username")
+    @Operation(summary = "Update User username.")
+    @JsonView(Views.UpdateUsernameView.class)
+    public ResponseEntity<UserDTO> updateUsername(Principal principal,
+                                                  @JsonView(Views.UpdateUsernameView.class) @RequestBody UserDTO userDTO) {
+        log.debug("User: {} is trying to update the username of a user!", principal.getName());
+        securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
+        var updatedUser = userService.updateUsername(userDTO);
+        return ResponseEntity.ok().body(updatedUser);
+    }
 }
+
+
+
+

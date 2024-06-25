@@ -2,6 +2,7 @@ package com.example.omega.mapper;
 
 import com.example.omega.domain.Transaction;
 import com.example.omega.domain.User;
+import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,6 +18,14 @@ public interface TransactionMapper {
     @Mapping(source = "recipientId", target = "recipient.id")
     @Mapping(source = "transactionType", target = "transactionType")
     Transaction toEntity(TransactionDTO transactionDTO);
+
+    @Mapping(source = "userId", target = "senderId")
+    @Mapping(source = "userId", target = "recipientId")
+    @Mapping(target = "transactionType", constant = "DEPOSIT")
+    @Mapping(target = "description", constant = "Added funds")
+    @Mapping(target = "currency", constant = "USD")
+    @Mapping(target = "isExpense", constant = "false")
+    TransactionDTO toTransactionDTO(CreditCardDTO creditCardDTO);
 
     default User fromId(Long userId) {
         if (userId == null) {

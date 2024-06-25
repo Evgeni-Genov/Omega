@@ -2,9 +2,11 @@ package com.example.omega.web;
 
 import com.example.omega.domain.Transaction;
 import com.example.omega.service.TransactionService;
+import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
 import com.example.omega.service.util.PaginationUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.javers.core.Javers;
@@ -48,5 +50,13 @@ public class TransactionResource {
         var transactionsPage = transactionService.getAllTransactionsForAUser(pageable, userId);
         var headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), transactionsPage);
         return ResponseEntity.ok().headers(headers).body(transactionsPage.getContent());
+    }
+
+    //TODO:
+    @PostMapping("/add-funds")
+    public ResponseEntity<TransactionDTO> addFunds(@Valid @RequestBody CreditCardDTO creditCardDTO) {
+        log.debug("User is trying to add funds!");
+        var createdCreditCardDTO = transactionService.addFunds(creditCardDTO);
+        return ResponseEntity.ok().body(createdCreditCardDTO);
     }
 }

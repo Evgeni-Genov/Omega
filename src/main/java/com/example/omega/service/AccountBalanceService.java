@@ -18,7 +18,6 @@ import java.util.Optional;
 public class AccountBalanceService {
 
     private final AccountBalanceRepository accountBalanceRepository;
-
     private final AccountBalanceMapper accountBalanceMapper;
 
     public AccountBalanceDTO create(AccountBalanceDTO accountBalanceDTO) {

@@ -27,13 +27,9 @@ public class ScheduledTasks {
 
     @Value("${google-authenticator.secret-phone}")
     private String secretKey;
-
     private final VerificationCodeRepository verificationCodeRepository;
-
     private final TransactionRepository transactionRepository;
-
     private final UserRepository userRepository;
-
     private final PasswordResetLinkRepository passwordResetLinkRepository;
 
     public ScheduledTasks(VerificationCodeRepository verificationCodeRepository, TransactionRepository transactionRepository,

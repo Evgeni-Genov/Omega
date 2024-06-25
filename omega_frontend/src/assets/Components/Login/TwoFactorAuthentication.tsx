@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import axiosInstance from '../../../AxiosConfiguration'; // Ensure the correct path to axiosInstance
+import axiosInstance from '../Config/AxiosConfiguration.ts'; // Ensure the correct path to axiosInstance
 import {
     Box,
     Button,
@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import {styled} from '@mui/material/styles';
 
-const PurpleSwitch = styled(Switch)(({theme}) => ({
+const PurpleSwitch = styled(Switch)(() => ({
     '& .MuiSwitch-switchBase.Mui-checked': {
         color: 'rebeccapurple',
         '&:hover': {
@@ -26,7 +26,7 @@ const PurpleSwitch = styled(Switch)(({theme}) => ({
     },
 }));
 
-const TwoFactorAuthentication = ({userId, twoFactorAuthentication = false}) => {
+const TwoFactorAuthentication = ({userId, email, twoFactorAuthentication = false}) => {
     const [enabled, setEnabled] = useState(twoFactorAuthentication);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -74,10 +74,9 @@ const TwoFactorAuthentication = ({userId, twoFactorAuthentication = false}) => {
     const generateQrCode = async () => {
         setLoading(true);
         setError('');
-        //TODO: we have to take the email of currentlyLoggedInUser not hard code the user email
         try {
             const response = await axiosInstance.get('/google-authenticator/generate-qr-code', {
-                params: {account: "e.genov@blubito.com", issuer: 'Omega'},
+                params: {account: email, issuer: 'Omega'},
                 responseType: 'arraybuffer'
             });
             const blob = new Blob([response.data], {type: 'image/png'});

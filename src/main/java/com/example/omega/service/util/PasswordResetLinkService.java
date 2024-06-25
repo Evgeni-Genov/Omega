@@ -43,7 +43,7 @@ public class PasswordResetLinkService {
     }
 
     public PasswordResetLink validateToken(String token) {
-        var passwordResetLink = passwordResetLinkRepository.findByToken(token)
+        var passwordResetLink = passwordResetLinkRepository.findByTokenContaining(token)
                 .orElseThrow(() -> new BadRequestException("Invalid password reset token"));
 
         if (passwordResetLink.getExpirationTime().isBefore(Instant.now())) {

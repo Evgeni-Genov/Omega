@@ -10,6 +10,7 @@ import com.example.omega.domain.UserDetailsImpl;
 import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.MailService;
+import com.example.omega.service.UserDetailsServiceImpl;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
 import com.example.omega.service.exception.BadRequestException;
@@ -36,15 +37,17 @@ import java.util.UUID;
 public class AuthenticationController {
 
     private final UserRepository userRepository;
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    private JwtUtils jwtUtils;
+    private final JwtUtils jwtUtils;
 
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
-    private UserService userService;
+    private final UserService userService;
 
-    private MailService mailService;
+    private final MailService mailService;
+
+    private final UserDetailsServiceImpl userDetailsService;
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
@@ -102,6 +105,28 @@ public class AuthenticationController {
         var verificationLink = "http://localhost:8080/mail/verify-email?token=" + token;
         mailService.accountActivationEmail(user.getEmail(), verificationLink);
         return ResponseEntity.ok(new MessageResponse("SUCCESSFUL_REGISTRATION"));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshJwtToken(@RequestBody String refreshToken) {
+        log.info("Generating Refresh Token!");
+        try {
+            if (jwtUtils.validateJwtToken(refreshToken)) {
+                var username = jwtUtils.getUsernameFromJwtToken(refreshToken);
+                var userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(username);
+                var newToken = jwtUtils.generateJwtToken(userDetails);
+                var newRefreshToken = jwtUtils.generateRefreshJwtToken(userDetails);
+
+                return ResponseEntity.ok(
+                        new JwtResponse(newToken, newRefreshToken, userDetails.getId(), username,
+                                userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList(),
+                                userDetails.isTwoFactorAuthentication()));
+            } else {
+                throw new BadRequestException("Invalid refresh token");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Could not refresh token: " + e.getMessage());
+        }
     }
 
     public String generateEmailVerificationToken() {

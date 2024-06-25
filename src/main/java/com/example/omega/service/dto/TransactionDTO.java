@@ -47,4 +47,6 @@ public class TransactionDTO extends AbstractAuditingDTO {
     private TransactionType transactionType;
 
     private TransactionStatus transactionStatus;
+
+    private Boolean isExpense;
 }
