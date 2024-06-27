@@ -28,7 +28,6 @@ public class UserServiceUtil {
      */
     public void validateUserNotNull(User user) {
         if (user == null) {
-            log.debug("Can't create null as a user!");
             throw new BadRequestException("Can't create null as a user!");
         }
     }
@@ -41,7 +40,6 @@ public class UserServiceUtil {
      */
     public void validateUsernameAndPasswordNotEmpty(User user) {
         if (StringUtils.isEmpty(user.getUsername()) || StringUtils.isEmpty(user.getPassword())) {
-            log.debug("Username and password are required.");
             throw new BadRequestException("Username and password are required.");
         }
     }
@@ -54,7 +52,6 @@ public class UserServiceUtil {
      */
     public void validateUsernameNotTaken(String username) {
         if (Boolean.TRUE.equals(existsByUsername(username))) {
-            log.debug("Username {} is already taken.", username);
             throw new BadRequestException("Username is already taken.");
         }
     }
@@ -67,7 +64,6 @@ public class UserServiceUtil {
      */
     public void validateEmailNotRegistered(String email) {
         if (email != null && Boolean.TRUE.equals(existsByEmail(email))) {
-            log.debug("Email {} is already registered.", email);
             throw new BadRequestException("Email is already registered.");
         }
     }
@@ -115,7 +111,7 @@ public class UserServiceUtil {
      * @param userId The ID of the user to validate.
      * @return The User entity if valid and found.
      * @throws BadRequestException If the provided userId is invalid
-     *                                 or if the user with the specified ID is not found.
+     *                             or if the user with the specified ID is not found.
      */
     public User validateAndGetUser(Long userId) {
         log.debug("Validating and retrieving User by ID: {}", userId);
@@ -138,32 +134,34 @@ public class UserServiceUtil {
      * will be applied to the user entity.
      *
      * @param userDTO The UserUpdateDTO containing fields to update.
-     * @param user          The User entity to be updated.
+     * @param user    The User entity to be updated.
      */
-
-    //TODO: StringUtils.isNotBlank()
-    // checks doc, better than this.
+    //TODO: refactor partial update fails if we dont change nameTag!
     public void fieldsToBeUpdated(UserDTO userDTO, User user) {
-        if (userDTO.getFirstName() != null) {
+        if (StringUtils.isNotBlank(userDTO.getFirstName())) {
             user.setFirstName(userDTO.getFirstName());
         }
-        if (userDTO.getLastName() != null) {
+        if (StringUtils.isNotBlank(userDTO.getLastName())) {
             user.setLastName(userDTO.getLastName());
         }
-        if (userDTO.getPhoneNumber() != null) {
+        if (StringUtils.isNotBlank(userDTO.getPhoneNumber())) {
             user.setPhoneNumber(userDTO.getPhoneNumber());
         }
-        if (userDTO.getAddress() != null) {
+        if (StringUtils.isNotBlank(userDTO.getAddress())) {
             user.setAddress(userDTO.getAddress());
         }
-        if (userDTO.getTownOfBirth() != null) {
+        if (StringUtils.isNotBlank(userDTO.getTownOfBirth())) {
             user.setTownOfBirth(userDTO.getTownOfBirth());
         }
-        if (userDTO.getCountryOfBirth() != null) {
+        if (StringUtils.isNotBlank(userDTO.getCountryOfBirth())) {
             user.setCountryOfBirth(userDTO.getCountryOfBirth());
         }
-        if (userDTO.getNameTag() != null) {
-            user.setNameTag(userDTO.getNameTag());
+        if (StringUtils.isNotBlank(userDTO.getNameTag()) && !userDTO.getNameTag().equals(user.getNameTag())) {
+            if (userRepository.findByNameTag(userDTO.getNameTag()).isEmpty()) {
+                user.setNameTag(userDTO.getNameTag());
+            } else {
+                throw new BadRequestException("Please choose another name tag! Current one exists!");
+            }
         }
     }
 }

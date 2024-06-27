@@ -18,6 +18,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
+
+import java.util.Arrays;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -43,23 +46,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
-                .cors(withDefaults()) // Enable CORS with default settings.
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection.
-                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests // Configure URL patterns and access control.
+                .cors(withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/management/health").permitAll() // Permit unauthenticated access to /management/health.
+                        .requestMatchers(HttpMethod.OPTIONS, "/user/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/management/health").permitAll()
                         .requestMatchers("/management/info").permitAll()
-                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll() // Permit unauthenticated access to /management/info.
-                        .requestMatchers("/api/**").authenticated()) // Permit unauthenticated access to /management/info.
+                        .requestMatchers("/mail/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/v3/**").permitAll()
+                        .requestMatchers("/user/**").permitAll()
+                        .requestMatchers("/transaction/**").permitAll()
+                        .requestMatchers("/google-authenticator/**").permitAll()
+                        .requestMatchers("/account-balance/**").permitAll()
+                        .requestMatchers("/transaction/**").permitAll()
+                )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))//we don't store info about the user in the session, comes only from token
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(withDefaults())
                 .logout(logout -> logout.deleteCookies("remove")
                         .invalidateHttpSession(false)
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/logout-success"));
-
         return http.build();
     }
 
@@ -109,5 +119,12 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
         return authConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public StrictHttpFirewall httpFirewall() {
+        var firewall = new StrictHttpFirewall();
+        firewall.setAllowedHttpMethods(Arrays.asList("GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"));
+        return firewall;
     }
 }

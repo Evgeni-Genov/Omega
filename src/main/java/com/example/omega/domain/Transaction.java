@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Entity
 @Table
@@ -23,11 +22,11 @@ public class Transaction extends AbstractAuditingEntity{
     @SequenceGenerator(name = "transaction_sequence_generator", initialValue = 1000, allocationSize = 1)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     private User sender;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recipient_id")
     private User recipient;
 
@@ -50,7 +49,6 @@ public class Transaction extends AbstractAuditingEntity{
     private TransactionType transactionType;
 
     @Column
-    @OneToMany(mappedBy = "transaction")
-    private List<TransactionStateHistory> transactionStateHistories;
+    private Boolean isExpense;
 
 }

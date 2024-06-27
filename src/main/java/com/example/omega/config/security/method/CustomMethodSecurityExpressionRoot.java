@@ -10,7 +10,7 @@ import org.springframework.security.core.Authentication;
  * to provide custom security expression operations.
  */
 public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot implements MethodSecurityExpressionOperations {
-
+    //TODO: delete?
     private UserService userService;
     private Object filterObject;
     private Object returnObject;

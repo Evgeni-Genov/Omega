@@ -157,6 +157,18 @@
             <version>3.5.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.javers</groupId>
+            <artifactId>javers-spring-boot-starter-sql</artifactId>
+            <version>7.4.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.eatthepath</groupId>
+            <artifactId>java-otp</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

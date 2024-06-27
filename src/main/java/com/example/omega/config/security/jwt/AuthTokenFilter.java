@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -39,9 +40,16 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @throws ServletException If a servlet error occurs.
      * @throws IOException      If an I/O error occurs.
      */
+    //TODO: logging in: Missing access token. Rejecting! we log in though why?
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("Authenticating request!");
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             var jwtAccessToken = parseJwtAccessToken(request);
             if (jwtAccessToken == null && !isSignUpRequest(request)) {
@@ -72,7 +80,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @return The JWT token if found in the header, or null if not found.
      */
     private String parseJwtAccessToken(HttpServletRequest request) {
-        var authorizationHeader = request.getHeader("AUTHORIZATION");
+        var authorizationHeader = request.getHeader("Authorization");
         if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer")) {
             return authorizationHeader.substring(7);
         }
@@ -86,7 +94,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
      * @return {@code true} if the request is a sign-in request, {@code false} otherwise.
      */
     private boolean isSignUpRequest(HttpServletRequest request) {
-        return request.getRequestURI().endsWith("/auth/signup") && request.getMethod().equals("POST");
+        return request.getRequestURI().endsWith("/auth/signup") && request.getMethod().equals(HttpMethod.POST);
     }
 }
 

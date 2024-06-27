@@ -146,7 +146,7 @@ public class SecurityUtils {
      * @throws BadRequestException if the current user is not authorized to edit the data.
      */
     //TODO: access sounds better
-    public void canCurrentUserEditThisData(Principal principal, Long userId) {
+    public void canCurrentUserAccessThisData(Principal principal, Long userId) {
         var currentUserId = extractCurrentUserIdFromPrincipal(principal);
         boolean isUserAuthenticated = userId.equals(currentUserId) || isCurrentUserInRole(Roles.ROLE_ADMIN.name());
         if (!isUserAuthenticated) {
