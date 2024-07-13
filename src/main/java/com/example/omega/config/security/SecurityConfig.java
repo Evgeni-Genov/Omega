@@ -14,11 +14,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 
 import java.util.Arrays;
 
@@ -31,9 +34,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-
     private final UserDetailsServiceImpl userDetailsService;
-
     private final AuthTokenFilter authTokenFilter;
 
     /**
@@ -61,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/google-authenticator/**").permitAll()
                         .requestMatchers("/account-balance/**").permitAll()
                         .requestMatchers("/transaction/**").permitAll()
+                        .requestMatchers("/api/**").permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -69,7 +71,21 @@ public class SecurityConfig {
                 .logout(logout -> logout.deleteCookies("remove")
                         .invalidateHttpSession(false)
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/logout-success"));
+                        .logoutSuccessUrl("/logout-success"))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-ancestors 'self'; form-action 'self'"))
+                        .xssProtection(xssProtection -> xssProtection.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)) // 1 year
+                        .contentTypeOptions(withDefaults())
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
+                        .permissionsPolicy(permissions -> permissions
+                                .policy("geolocation=(self), microphone=(), camera=()"))
+                );
         return http.build();
     }
 

@@ -53,7 +53,8 @@
     <changeSet id="add-column-two_factor_secret-to-table" author="egenov">
         <comment>Add new column two factor secret to table user</comment>
         <addColumn tableName="user">
-            <column name="two_factor_secret" type="varchar(255)">
+            <column name="two_factor_secret"
+                    type="varchar(255)">
             </column>
         </addColumn>
     </changeSet>
@@ -61,12 +62,20 @@
     <changeSet id="add-column-avatar-to-table" author="egenov">
         <comment>Add new column avatar to table user</comment>
         <addColumn tableName="user">
-            <column name="avatar" type="varchar(255)">
+            <column name="avatar"
+                    type="varchar(255)">
             </column>
         </addColumn>
     </changeSet>
 
-
+    <changeSet id="add-column-is_budgeting_enabled-to-user" author="egenov">
+        <comment>Add new column isBudgetingEnabled to table user</comment>
+        <addColumn tableName="user">
+            <column name="is_budgeting_enabled" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
     <!-- Add foreign key constraints here -->
     <changeSet id="add-verification-code-foreign-key" author="egenov">

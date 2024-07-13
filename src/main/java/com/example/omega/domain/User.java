@@ -45,12 +45,6 @@ public class User extends AbstractAuditingEntity {
     private String phoneNumber;
 
     @Column
-    private Boolean locked;
-
-    @Column
-    private Boolean enabled;
-
-    @Column
     private String address;
 
     @Column
@@ -58,6 +52,41 @@ public class User extends AbstractAuditingEntity {
 
     @Column
     private String countryOfBirth;
+
+    @Column
+    private String twoFactorSecret;
+
+    @Column
+    private String avatar;
+
+    @Column
+    private String emailVerificationToken;
+
+    @Column
+    private Boolean locked;
+
+    @Column
+    private Boolean enabled;
+
+    @Column
+    private Boolean twoFactorAuthentication;
+
+    @Column
+    private Boolean isBudgetingEnabled = Boolean.FALSE;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private Roles role;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private VerificationCode verificationCode;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private PasswordResetLink passwordResetLink;
+
+    @Column
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    private List<Budget> budgets;
 
     @Column
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
@@ -70,28 +99,6 @@ public class User extends AbstractAuditingEntity {
     @Column
     @OneToMany(mappedBy = "recipient", fetch = FetchType.EAGER)
     private List<Transaction> incomingTransactions;
-
-    @Column
-    @Enumerated(EnumType.STRING)
-    private Roles role;
-
-    @Column
-    private Boolean twoFactorAuthentication;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private VerificationCode verificationCode;
-
-    @Column
-    private String emailVerificationToken;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private PasswordResetLink passwordResetLink;
-
-    @Column
-    private String twoFactorSecret;
-
-    @Column
-    private String avatar;
 
 //    @Column
 //    @JoinColumn(unique = true)

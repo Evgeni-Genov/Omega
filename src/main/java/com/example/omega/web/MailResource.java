@@ -16,9 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class MailResource {
 
     private final MailService mailService;
-
     private final UserService userService;
-
     private final PasswordResetLinkService passwordResetLinkService;
 
     //TODO: Maybe use securityUtils.canCurrentUserEditThisData

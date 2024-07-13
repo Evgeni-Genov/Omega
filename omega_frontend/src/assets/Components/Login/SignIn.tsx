@@ -142,7 +142,9 @@ export default function SignIn() {
             }
         } catch (error) {
             console.error('Error during sign-in:', error);
-            if (error.response && error.response.status === 400) {
+            if (error.response && error.response.status === 401) {
+                setUsernameError(error.response.data.message);
+            } else if (error.response && error.response.status === 403) {
                 setUsernameError(error.response.data.message);
             } else {
                 setErrorMessage("Login Failed. Please try again.");

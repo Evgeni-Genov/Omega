@@ -25,7 +25,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findAllByRecipient(User recipient);
 
-    List<Transaction> findAllBySender(User sender);
+    List<Transaction> findByCreatedDateBetweenAndSenderId(Instant startDateTime, Instant endDateTime, Long senderId);
 
     List<Transaction> findAllByTransactionStatus(TransactionStatus transactionStatus);
 

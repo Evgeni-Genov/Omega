@@ -34,7 +34,6 @@ import InfoIcon from '@mui/icons-material/Info';
 import SecurityIcon from '@mui/icons-material/Security';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css'; // Importing the default styles
-import {parsePhoneNumberFromString} from 'libphonenumber-js';
 import './UserProfile.css';
 import TwoFactorAuthentication from "../Login/TwoFactorAuthentication.tsx";
 
@@ -398,12 +397,7 @@ const UserProfile = () => {
         }
     };
 
-    const validatePhoneNumber = (phoneNumber) => {
-        const parsedNumber = parsePhoneNumberFromString(phoneNumber);
-        return parsedNumber && parsedNumber.isValid();
-    };
-
-    const avatarUrl = userData.avatar ? `http://localhost:8080/user/avatar/${userData.avatar}` : null;
+    const avatarUrl = userData.avatar ? `https://localhost:8080/user/avatar/user/${userId}` : null;
 
     return (
         <Container maxWidth="md" className="user-profile" sx={{paddingTop: '20px'}}>

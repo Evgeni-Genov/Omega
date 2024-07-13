@@ -81,22 +81,19 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.CreateView.class, Views.UpdatePasswordView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
-            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
-    )
+            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.")
     private String password;
 
     @JsonView({Views.UpdatePasswordView.class, Views.PasswordResetView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
-            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
-    )
+            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.")
     private String newPassword;
 
     @JsonView({Views.UpdatePasswordView.class, Views.PasswordResetView.class})
     @Pattern(
             regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
-            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character."
-    )
+            message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character.")
     private String confirmNewPassword;
 
     @JsonView({Views.TwoFactorAuthenticationView.class})
@@ -122,6 +119,9 @@ public class UserDTO extends AbstractAuditingDTO {
 
     @JsonView({Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private Boolean twoFactorAuthentication;
+
+    @JsonView({Views.AllUsersWithDetails.class})
+    private Boolean isBudgetingEnabled;
 
     @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private List<AccountBalance> accountBalances;

@@ -48,6 +48,12 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="drop-column-balance" author="egenov">
+        <comment>Drop column balance from the table transaction</comment>
+        <dropColumn tableName="transaction"
+                    columnName="balance"/>
+    </changeSet>
+
     <!-- Add foreign key constraints here -->
 
     <changeSet id="add-foreign-key-sender" author="admin">

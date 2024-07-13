@@ -158,38 +158,38 @@ public class UserResource {
         return ResponseEntity.ok().body(updatedUser);
     }
 
-    @GetMapping("/avatar/{filename:.+}")
-    public ResponseEntity<byte[]> getAvatar(@PathVariable String filename) {
-        log.debug("REST request to access avatar: {}", filename);
+    @GetMapping("/avatar/user/{userId}")
+    public ResponseEntity<byte[]> getAvatarByUserId(@PathVariable Long userId) {
+        log.debug("REST request to access avatar for user ID: {}", userId);
         try {
-            var filePath = Paths.get(USER_PROFILE_DIR).resolve(filename).normalize();
-            var fileContent = Files.readAllBytes(filePath);
-
-            var contentType = Files.probeContentType(filePath);
+            var user = userService.getUserById(userId);
+            var filename = user.getAvatar();
+            var fileContent = userService.getAvatarContent(filename);
+            var contentType = Files.probeContentType(Paths.get(USER_PROFILE_DIR).resolve(filename));
             if (contentType == null) {
                 contentType = "application/octet-stream";
             }
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filePath.getFileName().toString() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                     .body(fileContent);
         } catch (Exception e) {
-            throw new BadRequestException("Error retrieving file: " + filename);
+            throw new BadRequestException("Error retrieving avatar for user ID: " + userId);
         }
     }
 
     @PutMapping("/update/number")
     @JsonView(Views.UpdatePhoneNumberView.class)
     public ResponseEntity<UserDTO> updatePhoneNumber(Principal principal,
-                                                  @JsonView(Views.UpdatePhoneNumberView.class) @RequestBody UserDTO userDTO){
+                                                     @JsonView(Views.UpdatePhoneNumberView.class) @RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update phone number!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.updatePhoneNumber(userDTO);
         return ResponseEntity.ok().body(updatedUser);
     }
 
-//    @PutMapping("/update/username")
+    //    @PutMapping("/update/username")
     @Operation(summary = "Update User username.")
     @JsonView(Views.UpdateUsernameView.class)
     public ResponseEntity<UserDTO> updateUsername(Principal principal,

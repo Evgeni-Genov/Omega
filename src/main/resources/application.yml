@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: tls
   cors:
     allowed-origins: '*'
     allowed-methods: '*'
@@ -76,7 +78,7 @@ management:
 omega:
   app:
     jwt-secret: bestSecretKeyEver
-    jwt-expiration-ms: 600000
+    jwt-expiration-ms: 604800000
     jwt-refresh-expirations-ms: 604800000
 
 google-authenticator:

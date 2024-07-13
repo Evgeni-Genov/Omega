@@ -26,7 +26,6 @@ import java.util.List;
 public class TransactionResource {
 
     private final TransactionService transactionService;
-
     private final Javers javers;
 
     @PostMapping("/send-funds")
@@ -52,7 +51,6 @@ public class TransactionResource {
         return ResponseEntity.ok().headers(headers).body(transactionsPage.getContent());
     }
 
-    //TODO:
     @PostMapping("/add-funds")
     public ResponseEntity<TransactionDTO> addFunds(@Valid @RequestBody CreditCardDTO creditCardDTO) {
         log.debug("User is trying to add funds!");

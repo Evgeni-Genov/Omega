@@ -14,6 +14,7 @@ import com.example.omega.service.UserDetailsServiceImpl;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
 import com.example.omega.service.exception.BadRequestException;
+import com.example.omega.service.exception.CustomAuthenticationException;
 import com.fasterxml.jackson.annotation.JsonView;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,32 +39,21 @@ public class AuthenticationController {
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
-
     private final JwtUtils jwtUtils;
-
     private final UserMapper userMapper;
-
     private final UserService userService;
-
     private final MailService mailService;
-
     private final UserDetailsServiceImpl userDetailsService;
-
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest request) {
-//        var userDTO =  userService.getUserById(1044L);
-//        var user =  userMapper.toEntity(userDTO);
-//        user.setPassword(bCryptPasswordEncoder.encode("Evgeni-Genov1"));
-//        userRepository.save(user);
-
         try {
             var authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
             if (!authentication.isAuthenticated()) {
-                throw new BadRequestException("Invalid username or password");
+                throw new CustomAuthenticationException("Invalid username or password");
             }
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -90,8 +80,11 @@ public class AuthenticationController {
                             userDetailsImpl.getUsername(),
                             roles,
                             userDetailsImpl.isTwoFactorAuthentication()));
+
         } catch (BadCredentialsException e) {
-            throw new BadRequestException("Invalid username or password");
+            throw new CustomAuthenticationException("Invalid username or password");
+        } catch (BadRequestException e) {
+            throw new BadRequestException("User is not enabled!");
         }
     }
 

@@ -99,7 +99,6 @@ public class UserServiceUtil {
      * and symbol string.
      */
     public String generateNameTag(String username) {
-        // Generate a random string of the specified length with alphanumeric and symbol characters
         log.debug("Generating the name tag of the user!");
         var randomString = RandomStringUtils.random(6, true, true);
         return username + randomString;

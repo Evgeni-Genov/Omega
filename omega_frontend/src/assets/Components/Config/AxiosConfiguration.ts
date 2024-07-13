@@ -1,13 +1,12 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080',
+    baseURL: 'https://localhost:8080',
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Refresh token function
 async function refreshToken() {
     const refreshToken = localStorage.getItem('REFRESH_TOKEN');
     if (!refreshToken) {
@@ -15,8 +14,7 @@ async function refreshToken() {
     }
 
     try {
-        // Sending the refresh token as a plain string
-        const response = await axios.post('http://localhost:8080/auth/refresh-token', refreshToken, {
+        const response = await axios.post('https://localhost:8080/auth/refresh-token', refreshToken, {
             headers: {
                 'Content-Type': 'text/plain',
             },
@@ -45,21 +43,20 @@ axiosInstance.interceptors.request.use(
     error => Promise.reject(error)
 );
 
-// Axios response interceptor
+
 axiosInstance.interceptors.response.use(
     response => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // Check if the error is due to expired token
         if (error.response.status === 400 && error.response.data.message === 'JWT token is expired' && !originalRequest._retry) {
-            originalRequest._retry = true; // Set retry flag
+            originalRequest._retry = true;
 
-            const newToken = await refreshToken(); // Attempt to refresh token
+            const newToken = await refreshToken();
             if (newToken) {
-                axiosInstance.defaults.headers['Authorization'] = `Bearer ${newToken}`; // Update default headers
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`; // Update original request headers
-                return axiosInstance(originalRequest); // Retry original request
+                axiosInstance.defaults.headers['Authorization'] = `Bearer ${newToken}`;
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                return axiosInstance(originalRequest);
             }
         }
 
@@ -69,12 +66,12 @@ axiosInstance.interceptors.response.use(
 
             const newToken = await refreshToken(); // Attempt to refresh token
             if (newToken) {
-                axiosInstance.defaults.headers['Authorization'] = `Bearer ${newToken}`; // Update default headers
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`; // Update original request headers
-                return axiosInstance(originalRequest); // Retry original request
+                axiosInstance.defaults.headers['Authorization'] = `Bearer ${newToken}`;
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                return axiosInstance(originalRequest);
             }
         }
-        return Promise.reject(error); // Reject promise if retry fails
+        return Promise.reject(error);
     }
 );
 

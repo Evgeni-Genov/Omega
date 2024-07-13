@@ -26,7 +26,6 @@ import java.io.IOException;
 public class GoogleAuthenticatorResource {
 
     private final GoogleAuthenticatorService googleAuthenticatorService;
-
     private final UserService userService;
 
     @GetMapping("/generate-secret-key")

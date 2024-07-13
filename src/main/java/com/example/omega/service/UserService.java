@@ -310,10 +310,6 @@ public class UserService {
         return false;
     }
 
-    public boolean isTwoFactorAuthenticationEnabled(String username) {
-        return userRepository.isTwoFactorAuthenticationEnabled(username);
-    }
-
     public void updateTwoFactorSecret(User user, String secretKey) {
         user.setTwoFactorSecret(secretKey);
         userRepository.save(user);
@@ -446,7 +442,6 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
-
     public UserDTO updatePhoneNumber(UserDTO userDTO) {
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());
 
@@ -463,5 +458,20 @@ public class UserService {
         user.setPhoneNumber(userDTO.getNewPhoneNumber());
         userRepository.save(user);
         return userMapper.toDTO(user);
+    }
+
+    public void setUserBudgeting(Long userId, boolean budgetingFlagValue) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        user.setIsBudgetingEnabled(budgetingFlagValue);
+        userRepository.save(user);
+    }
+
+    public byte[] getAvatarContent(String filename) {
+        try {
+            var filePath = Paths.get(USER_PROFILE_DIR).resolve(filename).normalize();
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new BadRequestException("Error reading avatar file: " + filename);
+        }
     }
 }

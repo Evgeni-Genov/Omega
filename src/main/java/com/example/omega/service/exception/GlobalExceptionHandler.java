@@ -3,12 +3,12 @@ package com.example.omega.service.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.LocalDateTime;
@@ -86,14 +86,21 @@ public class GlobalExceptionHandler {
         throw new BadRequestException("Validation failed", errors);
     }
 
-
-    //TODO: test
-    @ExceptionHandler(HttpClientErrorException.Unauthorized.class)
+    @ExceptionHandler(CustomAuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ResponseEntity<Object> handleUnauthorizedException(HttpClientErrorException.Unauthorized ex) {
+    public ResponseEntity<Object> handleUnauthorizedException(CustomAuthenticationException ex) {
         var formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
         var formattedInstant = formatter.format(LocalDateTime.now());
-        var errorResponse = new ErrorResponse((HttpStatus) ex.getStatusCode(), ex.getMessage(), formattedInstant);
+        var errorResponse = new ErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), formattedInstant);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<Object> handleBlockedException(CustomAuthenticationException ex) {
+        var formatter = DateTimeFormatter.ofPattern(DATE_FORMATTER);
+        var formattedInstant = formatter.format(LocalDateTime.now());
+        var errorResponse = new ErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage(), formattedInstant);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 }

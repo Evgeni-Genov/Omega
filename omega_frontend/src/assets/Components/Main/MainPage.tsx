@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {
     Alert,
     Autocomplete,
+    Avatar,
     Box,
     Button,
     Card,
@@ -32,7 +33,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from 'react-router-dom';
-import {styled} from '@mui/material/styles';
+import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
+import {PieChart} from '@mui/x-charts';
 
 const PurpleButton = styled(Button)(({theme}) => ({
     backgroundColor: 'rebeccapurple',
@@ -88,6 +90,44 @@ const CustomTextField = styled(TextField)(({theme}) => ({
     },
 }));
 
+const theme = createTheme({
+    components: {
+        MuiPickersDay: {
+            styleOverrides: {
+                root: {
+                    '&.Mui-selected': {
+                        backgroundColor: 'rebeccapurple',
+                        '&:hover': {
+                            backgroundColor: 'rgba(102, 51, 153, 0.8)',
+                        },
+                    },
+                },
+            },
+        },
+        MuiPickersCalendarHeader: {
+            styleOverrides: {
+                switchHeader: {
+                    '& .MuiTypography-root': {
+                        color: 'rebeccapurple',
+                    },
+                    '& .MuiSvgIcon-root': {
+                        color: 'rebeccapurple',
+                    },
+                },
+            },
+        },
+        MuiPickersModal: {
+            styleOverrides: {
+                dialogAction: {
+                    '& .MuiButton-textPrimary': {
+                        color: 'rebeccapurple',
+                    },
+                },
+            },
+        },
+    },
+});
+
 interface Transaction {
     id: number;
     description: string;
@@ -114,6 +154,21 @@ const formatDate = (dateString: string) => {
         }
         return format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss');
     } catch (error) {
+        return 'Invalid Date';
+    }
+};
+
+const formatDateWithoutTime = (dateString: Array<number>) => {
+    try {
+        if (dateString.length === 3) {
+            const [year, month, day] = dateString;
+            const date = new Date(year, month - 1, day);
+            return format(date, 'yyyy-MM-dd');
+        } else {
+            throw new Error('Invalid date array format');
+        }
+    } catch (error) {
+        console.error('Error formatting date:', error);
         return 'Invalid Date';
     }
 };
@@ -145,6 +200,21 @@ const MainPage = () => {
     const [sendFundsSuccessMessage, setSendFundsSuccessMessage] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const navigate = useNavigate();
+    const [errorColor, setErrorColor] = useState('error');
+    const [createBudgetSuccessMessage, setCreateBudgetSuccessMessage] = useState(false);
+    const [viewBudget, setViewBudget] = useState(false);
+    const [showCreateBudget, setShowCreateBudget] = useState(false);
+    const [openBudget, setOpenBudget] = useState(false);
+    const [budgets, setBudgets] = useState([]);
+    const [remainingBudget, setRemainingBudget] = useState<number | null>(null);
+    const [totalSpent, setTotalSpent] = useState<number>(0);
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const [searchUser, setSearchUser] = useState('');
+    const [budgetDetails, setBudgetDetails] = useState({
+        budget: '',
+        startDate: '',
+        endDate: ''
+    });
 
     useEffect(() => {
         const fetchAccountData = async () => {
@@ -176,6 +246,54 @@ const MainPage = () => {
 
         fetchAccountData();
     }, [navigate]);
+
+    useEffect(() => {
+        const fetchBudget = async () => {
+            try {
+                const token = localStorage.getItem('TOKEN');
+                const userId = localStorage.getItem('USER_ID');
+                const response = await axiosInstance.get(`/api/budgets/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setBudgets([response.data]);
+            } catch (error) {
+                console.error('Failed to fetch budget:', error);
+            }
+        };
+
+        fetchBudget();
+    }, []);
+
+    useEffect(() => {
+        if (viewBudget) {
+            fetchRemainingBudget();
+            fetchTotalSpent();
+        }
+    }, [viewBudget]);
+
+    useEffect(() => {
+        const fetchAvatar = async () => {
+            try {
+                const token = localStorage.getItem('TOKEN');
+                const userId = localStorage.getItem('USER_ID');
+                const response = await axiosInstance.get(`/user/avatar/user/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    responseType: 'blob',
+                });
+
+                const imageUrl = URL.createObjectURL(response.data);
+                setAvatarUrl(imageUrl);
+            } catch (error) {
+                console.error('Failed to fetch avatar:', error);
+            }
+        };
+
+        fetchAvatar();
+    }, []);
 
     const fetchSuggestions = debounce(async (query: string) => {
         setSearchLoading(true);
@@ -280,6 +398,7 @@ const MainPage = () => {
             const response = await axiosInstance.post('/transaction/send-funds', {
                 ...transactionDetails,
                 senderId: userId,
+                transactionType: 'TRANSFER',
             }, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -297,8 +416,8 @@ const MainPage = () => {
             setTransactions(prevTransactions => [
                 {
                     ...response.data,
-                    date: new Date().toISOString(),  // Ensuring the date is correctly formatted
-                    amount: -Math.abs(parseFloat(transactionDetails.amount)), // Ensure the amount is negative
+                    date: new Date().toISOString(),
+                    amount: -Math.abs(parseFloat(transactionDetails.amount)),
                     senderId: userId,
                 },
                 ...prevTransactions
@@ -310,6 +429,7 @@ const MainPage = () => {
             console.error('Failed to send funds:', error);
             if (error.response && error.response.status === 400) {
                 setErrorMessage(error.response.data.message);
+                setErrorColor('error');
             } else {
                 setErrorMessage('Internal Server Error. Please try again later.');
             }
@@ -344,8 +464,8 @@ const MainPage = () => {
             setTransactions(prevTransactions => [
                 {
                     ...response.data,
-                    date: new Date().toISOString(), // Ensure the date is set correctly
-                    amount: Math.abs(parseFloat(addFundsDetails.amount)), // Ensure the amount is positive
+                    date: new Date().toISOString(),
+                    amount: Math.abs(parseFloat(addFundsDetails.amount)),
                     recipientId: userId,
                     isExpense: false,
                     transactionType: 'DEPOSIT'
@@ -439,285 +559,611 @@ const MainPage = () => {
         return <Container maxWidth="md"><CircularProgress/></Container>;
     }
 
+    const handleBudgetInputChange = (e) => {
+        const {name, value} = e.target;
+        setBudgetDetails(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+    };
+
+    const handleCreateBudget = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = parseInt(localStorage.getItem('USER_ID') || '', 10);
+            const response = await axiosInstance.post('/api/budgets', {...budgetDetails, userId}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.status === 200) {
+                setBudgets(prevBudgets => [...prevBudgets, response.data]);
+                setOpenBudget(false);
+                setShowCreateBudget(false);
+                setCreateBudgetSuccessMessage(true);
+            } else {
+                throw new Error('Failed to create budget');
+            }
+        } catch (error) {
+            console.error('Failed to create budget:', error);
+            if (error.response) {
+                if (error.response.status === 400) {
+                    setErrorMessage(error.response.data.message);
+                } else if (error.response.status === 500) {
+                    setErrorMessage('Internal Server Error. Please try again later.');
+                } else {
+                    setErrorMessage('An error occurred. Please try again.');
+                }
+            } else {
+                setErrorMessage('An error occurred. Please try again.');
+            }
+        }
+    };
+
+    const handleDeleteBudget = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const budgetId = budgets[0]?.id;
+            await axiosInstance.delete(`/api/budgets/${budgetId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setViewBudget(false);
+            setBudgets([]);
+        } catch (error) {
+            console.error('Failed to delete budget:', error);
+        }
+    };
+
+    const fetchRemainingBudget = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = localStorage.getItem('USER_ID');
+            const response = await axiosInstance.get(`/api/budgets-remaining/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setRemainingBudget(response.data);
+        } catch (error) {
+            console.error('Failed to fetch remaining budget:', error);
+        }
+    };
+
+    const handleViewBudget = () => {
+        setViewBudget(true);
+        fetchRemainingBudget();
+    };
+
+    const fetchTotalSpent = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = localStorage.getItem('USER_ID');
+            const response = await axiosInstance.get(`/api/budgets/${userId}/total-spent`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setTotalSpent(response.data);
+        } catch (error) {
+            console.error('Failed to fetch total spent amount:', error);
+        }
+    };
+
     return (
-        <Container component="main" maxWidth="md"
-                   sx={{backgroundColor: 'white', borderRadius: 2, boxShadow: 3, padding: 3, mt: 8}}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4">Welcome to Your Dashboard</Typography>
-                <IconButton onClick={handleMenuClick} sx={{color: '#663399'}}>
-                    <SettingsIcon/>
-                </IconButton>
-                <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={() => handleMenuClose(null)}
-                >
-                    <MenuItem
-                        sx={{
-                            '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
-                            backgroundColor: 'white',
-                            color: 'black',
-                            '&.Mui-focusVisible': {
-                                backgroundColor: 'rebeccapurple',
-                                color: 'white',
-                            }
-                        }}
-                        onClick={() => handleMenuClose('profile')}
+        <ThemeProvider theme={theme}>
+            <Container component="main" maxWidth="md"
+                       sx={{backgroundColor: 'white', borderRadius: 2, boxShadow: 3, padding: 3, mt: 8}}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <Box display="flex" alignItems="center">
+                        {avatarUrl && (
+                            <Avatar src={avatarUrl} alt="User Avatar" sx={{width: 56, height: 56, marginRight: 2}}/>
+                        )}
+                        <CustomTextField
+                            margin="dense"
+                            name="searchUser"
+                            label="Search User"
+                            type="text"
+                            value={searchUser}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setSearchUser(value);
+
+                                if (value.length > 2) {
+                                    fetchSuggestions(value);
+                                } else {
+                                    setSuggestions([]);
+                                }
+                            }}
+                            sx={{marginRight: 2}}
+                        />
+                    </Box>
+                    <IconButton onClick={handleMenuClick} sx={{color: '#663399'}}>
+                        <SettingsIcon/>
+                    </IconButton>
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={() => handleMenuClose(null)}
                     >
-                        Profile
-                    </MenuItem>
-                    <MenuItem
-                        sx={{
-                            '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
-                            backgroundColor: 'white',
-                            color: 'black',
-                            '&.Mui-focusVisible': {
-                                backgroundColor: 'rebeccapurple',
-                                color: 'white',
-                            }
-                        }}
-                        onClick={() => handleMenuClose('logout')}
-                    >
-                        Logout
-                    </MenuItem>
-                </Menu>
-            </Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <StyledCard>
-                    <CardContent>
-                        <Box display="flex" alignItems="center">
-                            <AccountBalanceIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
-                            <Box>
-                                <Typography variant="h5" component="div">
-                                    Account Balance
-                                </Typography>
-                                <Typography variant="h4" color="text.secondary">
-                                    {formatCurrency(accountBalance?.balance || 0)}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </CardContent>
-                </StyledCard>
-                <Box display="flex" flexDirection="column">
-                    <PurpleButton variant="contained" startIcon={<SendIcon/>} onClick={() => setOpen(true)}>Send
-                        Funds</PurpleButton>
-                    <PurpleButton variant="contained" startIcon={<AddCardIcon/>} onClick={handleAddFunds}>Add
-                        Funds</PurpleButton>
+                        <MenuItem
+                            sx={{
+                                '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
+                                backgroundColor: 'white',
+                                color: 'black',
+                                '&.Mui-focusVisible': {
+                                    backgroundColor: 'rebeccapurple',
+                                    color: 'white',
+                                }
+                            }}
+                            onClick={() => handleMenuClose('profile')}
+                        >
+                            Profile
+                        </MenuItem>
+                        <MenuItem
+                            sx={{
+                                '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
+                                backgroundColor: 'white',
+                                color: 'black',
+                                '&.Mui-focusVisible': {
+                                    backgroundColor: 'rebeccapurple',
+                                    color: 'white',
+                                }
+                            }}
+                            onClick={() => handleMenuClose('logout')}
+                        >
+                            Logout
+                        </MenuItem>
+                    </Menu>
                 </Box>
-            </Box>
-            <Typography variant="h5" gutterBottom>
-                Recent Transactions
-            </Typography>
-            <Grid container spacing={3}>
-                {transactions.map((transaction, index) => (
-                    <Grid item xs={12} key={index}>
-                        <TransactionCard>
-                            <Box display="flex" alignItems="center" mr={2}>
-                                {renderTransactionIcon(transaction)}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <StyledCard>
+                        <CardContent>
+                            <Box display="flex" alignItems="center">
+                                <AccountBalanceIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
+                                <Box>
+                                    <Typography variant="h5" component="div">
+                                        Account Balance
+                                    </Typography>
+                                    <Typography variant="h4" color="text.secondary">
+                                        {formatCurrency(accountBalance?.balance || 0)}
+                                    </Typography>
+                                </Box>
                             </Box>
-                            <Box>
-                                <Typography variant="h6">
-                                    {transaction.description}
-                                </Typography>
-                                <Typography component="div" color="textSecondary">
-                                    Amount: {transaction.isExpense ? (
-                                    <NegativeAmount
-                                        component="span">{formatCurrency(Math.abs(transaction.amount))}</NegativeAmount>
-                                ) : (
-                                    <PositiveAmount
-                                        component="span">{formatCurrency(transaction.amount)}</PositiveAmount>
-                                )}
-                                </Typography>
-                                <Typography color="textSecondary">
-                                    Date: {transaction.createdDate ? formatDate(transaction.createdDate) : 'Invalid Date'}
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Status: {transaction.transactionStatus}
-                                </Typography>
-                            </Box>
-                        </TransactionCard>
-                    </Grid>
-                ))}
-            </Grid>
-            <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Send Funds</DialogTitle>
-                <DialogContent>
-                    {errorMessage && (
-                        <Typography color="error" gutterBottom>
-                            {errorMessage}
-                        </Typography>
-                    )}
-                    <Autocomplete
-                        freeSolo
-                        options={suggestions}
-                        onInputChange={(event, newInputValue) => {
-                            handleInputChange({target: {name: 'userNameTag', value: newInputValue}});
-                        }}
-                        renderInput={(params) => (
+                        </CardContent>
+                    </StyledCard>
+                    <Box display="flex" flexDirection="column">
+                        <PurpleButton variant="contained" startIcon={<SendIcon/>} onClick={() => setOpen(true)}>Send
+                            Funds</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<AddCardIcon/>} onClick={handleAddFunds}>Add
+                            Funds</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<AccountBalanceIcon/>}
+                                      onClick={() => setOpenBudget(true)}>Budget</PurpleButton>
+                    </Box>
+                </Box>
+                <Typography variant="h5" gutterBottom>
+                    Recent Transactions
+                </Typography>
+                <Grid container spacing={3}>
+                    {transactions.map((transaction, index) => (
+                        <Grid item xs={12} key={index}>
+                            <TransactionCard>
+                                <Box display="flex" alignItems="center" mr={2}>
+                                    {renderTransactionIcon(transaction)}
+                                </Box>
+                                <Box>
+                                    <Typography variant="h6">
+                                        {transaction.description}
+                                    </Typography>
+                                    <Typography component="div" color="textSecondary">
+                                        Amount: {transaction.isExpense ? (
+                                        <NegativeAmount
+                                            component="span">{formatCurrency(Math.abs(transaction.amount))}</NegativeAmount>
+                                    ) : (
+                                        <PositiveAmount
+                                            component="span">{formatCurrency(transaction.amount)}</PositiveAmount>
+                                    )}
+                                    </Typography>
+                                    <Typography color="textSecondary">
+                                        Date: {transaction.createdDate ? formatDate(transaction.createdDate) : 'Invalid Date'}
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">
+                                        Status: {transaction.transactionStatus}
+                                    </Typography>
+                                </Box>
+                            </TransactionCard>
+                        </Grid>
+                    ))}
+                </Grid>
+                <Dialog open={open} onClose={handleClose}>
+                    <DialogTitle>Send Funds</DialogTitle>
+                    <DialogContent>
+                        {errorMessage && (
+                            <Typography
+                                sx={{
+                                    color: 'error.main',
+                                    fontWeight: 'bold',
+                                    bgcolor: 'error.light',
+                                    p: 1,
+                                    borderRadius: 1,
+                                }}
+                                align="center"
+                                gutterBottom
+                            >
+                                {errorMessage}
+                            </Typography>
+                        )}
+                        <Autocomplete
+                            freeSolo
+                            options={suggestions}
+                            onInputChange={(event, newInputValue) => {
+                                handleInputChange({target: {name: 'userNameTag', value: newInputValue}});
+                            }}
+                            renderInput={(params) => (
+                                <CustomTextField
+                                    {...params}
+                                    margin="dense"
+                                    label="Recipient Name Tag"
+                                    type="text"
+                                    fullWidth
+                                    value={transactionDetails.userNameTag}
+                                    onChange={handleInputChange}
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {searchLoading ? <CircularProgress color="inherit" size={20}/> : null}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        ),
+                                    }}
+                                />
+                            )}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={transactionDetails.amount}
+                            onChange={handleInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="description"
+                            label="Description"
+                            type="text"
+                            fullWidth
+                            value={transactionDetails.description}
+                            onChange={handleInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="currency"
+                            label="Currency"
+                            select
+                            fullWidth
+                            value={transactionDetails.currency}
+                            onChange={handleInputChange}
+                        >
+                            <MenuItem value="USD">USD</MenuItem>
+                            <MenuItem value="BGN">BGN</MenuItem>
+                            <MenuItem value="EUR">EUR</MenuItem>
+                            <MenuItem value="GBP">GBP</MenuItem>
+                            <MenuItem value="JPY">JPY</MenuItem>
+                        </CustomTextField>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleSendFunds} variant="contained">
+                            Send
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+                <Dialog open={openAddFunds} onClose={handleAddFundsClose}>
+                    <DialogTitle>Add Funds</DialogTitle>
+                    <DialogContent>
+                        {errorMessage && (
+                            <Typography
+                                sx={{
+                                    color: 'error.main',
+                                    fontWeight: 'bold',
+                                    bgcolor: 'error.light',
+                                    p: 1,
+                                    borderRadius: 1,
+                                }}
+                                gutterBottom
+                            >
+                                {errorMessage}
+                            </Typography>
+                        )}
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <CreditCardIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
+                            <Typography variant="h5" component="div">
+                                Enter Card Details
+                            </Typography>
+                        </Box>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            {renderCardIcon(addFundsDetails.cardNumber)}
+                            <Typography variant="body1" component="div">
+                                {getCardType(addFundsDetails.cardNumber)}
+                            </Typography>
+                        </Box>
+                        <CustomTextField
+                            margin="dense"
+                            name="cardNumber"
+                            label="Card Number"
+                            type="text"
+                            fullWidth
+                            value={addFundsDetails.cardNumber}
+                            onChange={handleAddFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="cardOwner"
+                            label="Card Owner"
+                            type="text"
+                            fullWidth
+                            value={addFundsDetails.cardOwner}
+                            onChange={handleAddFundsInputChange}
+                        />
+                        <Box display="flex" justifyContent="space-between">
                             <CustomTextField
-                                {...params}
                                 margin="dense"
-                                name="userNameTag"
-                                label="Recipient Name Tag"
+                                name="expiryDate"
+                                label="Expiry Date (MM/YYYY)"
                                 type="text"
                                 fullWidth
-                                value={transactionDetails.userNameTag}
-                                onChange={handleInputChange}
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {searchLoading ? <CircularProgress color="inherit" size={20}/> : null}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
-                                }}
+                                value={addFundsDetails.rawExpiryDate}
+                                onChange={handleAddFundsInputChange}
+                                sx={{marginRight: 1}}
                             />
+                            <CustomTextField
+                                margin="dense"
+                                name="securityCode"
+                                label="CVV"
+                                type="text"
+                                fullWidth
+                                value={addFundsDetails.securityCode}
+                                onChange={handleAddFundsInputChange}
+                                sx={{marginLeft: 1}}
+                            />
+                        </Box>
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={addFundsDetails.amount}
+                            onChange={handleAddFundsInputChange}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleAddFundsClose} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleAddFundsSubmit} variant="contained">
+                            Add
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={openBudget} onClose={() => setOpenBudget(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>Budget Management</DialogTitle>
+                    <DialogContent>
+                        {budgets.length === 0 ? (
+                            <Typography variant="body1" gutterBottom>
+                                No active budgets
+                            </Typography>
+                        ) : (
+                            <>
+                                <Typography variant="body1" gutterBottom>
+                                    You have {budgets.length} active budget(s)
+                                </Typography>
+                                <Box textAlign="center" mt={2}>
+                                    <PurpleButton onClick={handleViewBudget} variant="contained">
+                                        View Budget
+                                    </PurpleButton>
+                                </Box>
+                            </>
                         )}
-                    />
-                    <CustomTextField
-                        margin="dense"
-                        name="amount"
-                        label="Amount"
-                        type="number"
-                        fullWidth
-                        value={transactionDetails.amount}
-                        onChange={handleInputChange}
-                    />
-                    <CustomTextField
-                        margin="dense"
-                        name="description"
-                        label="Description"
-                        type="text"
-                        fullWidth
-                        value={transactionDetails.description}
-                        onChange={handleInputChange}
-                    />
-                    <CustomTextField
-                        margin="dense"
-                        name="currency"
-                        label="Currency"
-                        select
-                        fullWidth
-                        value={transactionDetails.currency}
-                        onChange={handleInputChange}
-                    >
-                        <MenuItem value="USD">USD</MenuItem>
-                        <MenuItem value="BGN">BGN</MenuItem>
-                        <MenuItem value="EUR">EUR</MenuItem>
-                        <MenuItem value="GBP">GBP</MenuItem>
-                        <MenuItem value="JPY">JPY</MenuItem>
-                    </CustomTextField>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose} color="secondary">
-                        Cancel
-                    </Button>
-                    <PurpleButton onClick={handleSendFunds} variant="contained">
-                        Send
-                    </PurpleButton>
-                </DialogActions>
-            </Dialog>
-            <Dialog open={openAddFunds} onClose={handleAddFundsClose}>
-                <DialogTitle>Add Funds</DialogTitle>
-                <DialogContent>
-                    {errorMessage && (
-                        <Typography color="error" gutterBottom>
-                            {errorMessage}
-                        </Typography>
-                    )}
-                    <Box display="flex" alignItems="center" mb={2}>
-                        <CreditCardIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
-                        <Typography variant="h5" component="div">
-                            Enter Card Details
-                        </Typography>
-                    </Box>
-                    <Box display="flex" alignItems="center" mb={2}>
-                        {renderCardIcon(addFundsDetails.cardNumber)}
-                        <Typography variant="body1" component="div">
-                            {getCardType(addFundsDetails.cardNumber)}
-                        </Typography>
-                    </Box>
-                    <CustomTextField
-                        margin="dense"
-                        name="cardNumber"
-                        label="Card Number"
-                        type="text"
-                        fullWidth
-                        value={addFundsDetails.cardNumber}
-                        onChange={handleAddFundsInputChange}
-                    />
-                    <CustomTextField
-                        margin="dense"
-                        name="cardOwner"
-                        label="Card Owner"
-                        type="text"
-                        fullWidth
-                        value={addFundsDetails.cardOwner}
-                        onChange={handleAddFundsInputChange}
-                    />
-                    <Box display="flex" justifyContent="space-between">
-                        <CustomTextField
-                            margin="dense"
-                            name="expiryDate"
-                            label="Expiry Date (MM/YYYY)"
-                            type="text"
-                            fullWidth
-                            value={addFundsDetails.rawExpiryDate}
-                            onChange={handleAddFundsInputChange}
-                            sx={{marginRight: 1}}
-                        />
-                        <CustomTextField
-                            margin="dense"
-                            name="securityCode"
-                            label="CVV"
-                            type="text"
-                            fullWidth
-                            value={addFundsDetails.securityCode}
-                            onChange={handleAddFundsInputChange}
-                            sx={{marginLeft: 1}}
-                        />
-                    </Box>
-                    <CustomTextField
-                        margin="dense"
-                        name="amount"
-                        label="Amount"
-                        type="number"
-                        fullWidth
-                        value={addFundsDetails.amount}
-                        onChange={handleAddFundsInputChange}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleAddFundsClose} color="secondary">
-                        Cancel
-                    </Button>
-                    <PurpleButton onClick={handleAddFundsSubmit} variant="contained">
-                        Add
-                    </PurpleButton>
-                </DialogActions>
-            </Dialog>
-            <Snackbar
-                open={addFundsSuccessMessage}
-                autoHideDuration={2000}
-                onClose={handleSnackbarClose}
-                anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-            >
-                <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
-                    Successfully added funds!
-                </Alert>
-            </Snackbar>
-            <Snackbar
-                open={sendFundsSuccessMessage}
-                autoHideDuration={2000}
-                onClose={handleSnackbarClose}
-                anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-            >
-                <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
-                    Successfully sent funds!
-                </Alert>
-            </Snackbar>
-        </Container>
+                        {!showCreateBudget ? (
+                            <Box textAlign="center" mt={2}>
+                                <PurpleButton onClick={() => setShowCreateBudget(true)} variant="contained">
+                                    Create New Budget
+                                </PurpleButton>
+                            </Box>
+                        ) : (
+                            <>
+                                <Typography variant="h6" gutterBottom>
+                                    Create New Budget
+                                </Typography>
+                                {/* Budget creation fields */}
+                                <CustomTextField
+                                    margin="dense"
+                                    name="budget"
+                                    label="Budget Amount"
+                                    type="number"
+                                    fullWidth
+                                    value={budgetDetails.budget}
+                                    onChange={handleBudgetInputChange}
+                                />
+                                <CustomTextField
+                                    margin="dense"
+                                    name="startDate"
+                                    label="Start Date"
+                                    type="date"
+                                    fullWidth
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    value={budgetDetails.startDate}
+                                    onChange={handleBudgetInputChange}
+                                />
+                                <CustomTextField
+                                    margin="dense"
+                                    name="endDate"
+                                    label="End Date"
+                                    type="date"
+                                    fullWidth
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    value={budgetDetails.endDate}
+                                    onChange={handleBudgetInputChange}
+                                />
+                            </>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenBudget(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        {showCreateBudget && (
+                            <PurpleButton onClick={handleCreateBudget} variant="contained">
+                                Create Budget
+                            </PurpleButton>
+                        )}
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={viewBudget} onClose={() => setViewBudget(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle style={{display: 'flex', alignItems: 'center'}}>
+                        <AccountBalanceIcon style={{marginRight: '8px', color: 'rebeccapurple'}}/>
+                        Active Budget
+                    </DialogTitle>
+                    <DialogContent>
+                        {budgets.length > 0 && (
+                            <>
+                                <Typography variant="h6" gutterBottom style={{textAlign: 'center', marginTop: '16px'}}>
+                                    {formatDateWithoutTime(budgets[0]?.startDate)} - {formatDateWithoutTime(budgets[0]?.endDate)}
+                                </Typography>
+                                <div style={{display: 'flex', justifyContent: 'center', marginTop: '16px'}}>
+                                    <PieChart
+                                        series={[
+                                            {
+                                                data: [
+                                                    {
+                                                        id: 'Money Spent',
+                                                        label: 'Money Spent',
+                                                        value: totalSpent,
+                                                        color: '#FF0000',
+                                                    },
+                                                    {
+                                                        id: 'Money Left',
+                                                        label: 'Money Left',
+                                                        value: budgets[0]?.budget - totalSpent,
+                                                        color: '#00D100',
+                                                    },
+                                                ],
+                                            },
+                                        ]}
+                                        width={400}
+                                        height={300}
+                                        margin={{top: 40, right: 200, bottom: 80, left: 80}}
+                                        innerRadius={0.5}
+                                        padAngle={0.7}
+                                        cornerRadius={3}
+                                        activeOuterRadiusOffset={8}
+                                        colors={['red', 'green']}
+                                        borderWidth={1}
+                                        borderColor={{from: 'color', modifiers: [['darker', 0.2]]}}
+                                        arcLinkLabelsSkipAngle={10}
+                                        arcLinkLabelsTextColor="#333333"
+                                        arcLinkLabelsThickness={2}
+                                        arcLinkLabelsColor={{from: 'color'}}
+                                        arcLabelsSkipAngle={10}
+                                        arcLabelsTextColor={{from: 'color', modifiers: [['darker', 2]]}}
+                                        legends={[
+                                            {
+                                                anchor: 'right',
+                                                direction: 'column',
+                                                justify: false,
+                                                translateX: 140,
+                                                translateY: 0,
+                                                itemsSpacing: 0,
+                                                itemWidth: 150,
+                                                itemHeight: 20,
+                                                itemTextColor: '#999',
+                                                itemDirection: 'left-to-right',
+                                                itemOpacity: 1,
+                                                symbolSize: 18,
+                                                symbolShape: 'circle',
+                                                effects: [
+                                                    {
+                                                        on: 'hover',
+                                                        style: {
+                                                            itemTextColor: '#000',
+                                                        },
+                                                    },
+                                                ],
+                                                data: [
+                                                    {
+                                                        id: 'Money Spent',
+                                                        label: `Money Spent: ${formatCurrency(totalSpent)}`,
+                                                        color: 'red',
+                                                    },
+                                                    {
+                                                        id: 'Money Left',
+                                                        label: `Money Left: ${formatCurrency(budgets[0]?.budget - totalSpent)}`,
+                                                        color: 'green',
+                                                    },
+                                                ],
+                                                format: (value) => `${value.id}: ${value.label}`,
+                                            },
+                                        ]}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setViewBudget(false)} color="secondary">
+                            Close
+                        </Button>
+                        <Button onClick={handleDeleteBudget} color="error">
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Snackbar
+                    open={createBudgetSuccessMessage}
+                    autoHideDuration={3000}
+                    onClose={() => setCreateBudgetSuccessMessage(false)}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={() => setCreateBudgetSuccessMessage(false)} severity="success" sx={{width: '100%'}}>
+                        Successfully created budget!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={addFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully added funds!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={sendFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully sent funds!
+                    </Alert>
+                </Snackbar>
+            </Container>
+        </ThemeProvider>
     );
 };
 
