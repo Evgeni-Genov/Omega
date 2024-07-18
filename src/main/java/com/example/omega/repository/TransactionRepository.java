@@ -27,6 +27,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByCreatedDateBetweenAndSenderId(Instant startDateTime, Instant endDateTime, Long senderId);
 
+    @Query("SELECT t FROM Transaction t WHERE (t.recipient.id = :userId OR t.sender.id = :userId) AND t.createdDate BETWEEN :startDateTime AND :endDateTime")
+    List<Transaction> findByUserIdAndCreatedDateBetween(@Param("userId") Long userId, @Param("startDateTime") Instant startDateTime, @Param("endDateTime") Instant endDateTime);
+
     List<Transaction> findAllByTransactionStatus(TransactionStatus transactionStatus);
 
     @Query(value = "SELECT transaction FROM Transaction transaction " +

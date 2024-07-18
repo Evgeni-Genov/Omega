@@ -8,7 +8,6 @@ import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.PaginationUtil;
 import com.example.omega.service.util.PasswordResetLinkService;
 import com.example.omega.service.util.SecurityUtils;
-import com.example.omega.service.util.UserServiceUtil;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
@@ -36,14 +35,9 @@ import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 public class UserResource {
 
     private final UserService userService;
-    private final UserServiceUtil userServiceUtil;
     private final SecurityUtils securityUtils;
     private final PasswordResetLinkService passwordResetLinkService;
     private final MailService mailService;
-
-    //TODO: deleting done by ROLE_ADMIN, ROLE_USER if the it's his own profile, add an additional check if the user has money over 0, to be sure the user wont lose money
-    //TODO: good policy to suggest the user to send to someone or spend his money
-    //TODO: maybe after when having 5 USD user can delete but again with the prompt if user agrees he can delete it.
 
     @PatchMapping("/update/profile")
     @Operation(summary = "Update User non-credential information.")
@@ -108,8 +102,10 @@ public class UserResource {
         return ResponseEntity.ok().body(user);
     }
 
+    //TODO: Not implemented in the FE.
     @DeleteMapping("/delete-user/{userId}")
     @Operation(summary = "Delete a user by their unique user ID.")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity<Void> deleteUserById(Principal principal, @PathVariable Long userId) {
         log.debug("User: {} is trying to delete a user by id!", principal.getName());
         securityUtils.canCurrentUserAccessThisData(principal, userId);

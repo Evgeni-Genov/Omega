@@ -35,6 +35,8 @@ import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from 'react-router-dom';
 import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
 import {PieChart} from '@mui/x-charts';
+import InfoIcon from "@mui/icons-material/Info";
+import DescriptionIcon from '@mui/icons-material/Description';
 
 const PurpleButton = styled(Button)(({theme}) => ({
     backgroundColor: 'rebeccapurple',
@@ -179,20 +181,6 @@ const MainPage = () => {
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [openAddFunds, setOpenAddFunds] = useState(false);
-    const [transactionDetails, setTransactionDetails] = useState({
-        userNameTag: '',
-        amount: '',
-        description: '',
-        currency: 'USD',
-    });
-    const [addFundsDetails, setAddFundsDetails] = useState({
-        cardNumber: '',
-        cardOwner: '',
-        rawExpiryDate: '',
-        expiryDate: '',
-        securityCode: '',
-        amount: '',
-    });
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -210,10 +198,31 @@ const MainPage = () => {
     const [totalSpent, setTotalSpent] = useState<number>(0);
     const [avatarUrl, setAvatarUrl] = useState('');
     const [searchUser, setSearchUser] = useState('');
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [transactionSnapshots, setTransactionSnapshots] = useState<any[]>([]);
+    const [openReport, setOpenReport] = useState(false);
+    const [reportDates, setReportDates] = useState({
+        startDate: '',
+        endDate: ''
+    });
     const [budgetDetails, setBudgetDetails] = useState({
         budget: '',
         startDate: '',
         endDate: ''
+    });
+    const [transactionDetails, setTransactionDetails] = useState({
+        userNameTag: '',
+        amount: '',
+        description: '',
+        currency: 'USD',
+    });
+    const [addFundsDetails, setAddFundsDetails] = useState({
+        cardNumber: '',
+        cardOwner: '',
+        rawExpiryDate: '',
+        expiryDate: '',
+        securityCode: '',
+        amount: '',
     });
 
     useEffect(() => {
@@ -651,6 +660,56 @@ const MainPage = () => {
         }
     };
 
+    const fetchTransactionSnapshots = async (transactionId: number) => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const response = await axiosInstance.get(`/transaction/snapshots/${transactionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setTransactionSnapshots(response.data);
+        } catch (error) {
+            console.error('Failed to fetch transaction snapshots:', error);
+        }
+    };
+
+    const handleReportDatesChange = (e) => {
+        const {name, value} = e.target;
+        setReportDates(prevDates => ({
+            ...prevDates,
+            [name]: value
+        }));
+    };
+
+    const handleDownloadReport = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const response = await axiosInstance.get('/api/transactions-report', {
+                params: {
+                    startDate: reportDates.startDate,
+                    endDate: reportDates.endDate
+                },
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'transaction_report.pdf');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setOpenReport(false);
+        } catch (error) {
+            console.error('Failed to download report:', error);
+            setErrorMessage('Failed to download report. Please try again.');
+        }
+    };
+
     return (
         <ThemeProvider theme={theme}>
             <Container component="main" maxWidth="md"
@@ -740,6 +799,8 @@ const MainPage = () => {
                             Funds</PurpleButton>
                         <PurpleButton variant="contained" startIcon={<AccountBalanceIcon/>}
                                       onClick={() => setOpenBudget(true)}>Budget</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<DescriptionIcon/>}
+                                      onClick={() => setOpenReport(true)}>Report</PurpleButton>
                     </Box>
                 </Box>
                 <Typography variant="h5" gutterBottom>
@@ -771,6 +832,16 @@ const MainPage = () => {
                                     <Typography variant="body2" color="textSecondary">
                                         Status: {transaction.transactionStatus}
                                     </Typography>
+                                </Box>
+                                <Box display="flex" justifyContent="flex-end">
+                                    <IconButton
+                                        onClick={() => {
+                                            setSelectedTransaction(transaction);
+                                            fetchTransactionSnapshots(transaction.id);
+                                        }}
+                                    >
+                                        <InfoIcon/>
+                                    </IconButton>
                                 </Box>
                             </TransactionCard>
                         </Grid>
@@ -1132,6 +1203,67 @@ const MainPage = () => {
                     </DialogActions>
                 </Dialog>
 
+                <Dialog open={openReport} onClose={() => setOpenReport(false)}>
+                    <DialogTitle>Generate Transaction Report</DialogTitle>
+                    <DialogContent>
+                        <CustomTextField
+                            margin="dense"
+                            name="startDate"
+                            label="Start Date"
+                            type="date"
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            value={reportDates.startDate}
+                            onChange={handleReportDatesChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="endDate"
+                            label="End Date"
+                            type="date"
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            value={reportDates.endDate}
+                            onChange={handleReportDatesChange}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenReport(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleDownloadReport} variant="contained">
+                            Download PDF
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={selectedTransaction !== null} onClose={() => setSelectedTransaction(null)}>
+                    <DialogTitle>Transaction History</DialogTitle>
+                    <DialogContent>
+                        {transactionSnapshots.map((snapshot, index) => (
+                            <Box key={index} mb={2}>
+                                <Typography variant="h6">Transaction ID: {snapshot.globalId.cdoId}</Typography>
+                                <Typography>Created Date: {snapshot.commitMetadata.commitDateInstant}</Typography>
+                                <Typography>Author: {snapshot.commitMetadata.author}</Typography>
+                                <Typography>Transaction Type: {snapshot.state.transactionType}</Typography>
+                                <Typography>Amount: {snapshot.state.amount}</Typography>
+                                <Typography>Currency: {snapshot.state.currency}</Typography>
+                                <Typography>Status: {snapshot.state.transactionStatus}</Typography>
+                                <Typography>Sender ID: {snapshot.state.sender.cdoId}</Typography>
+                                <Typography>Recipient ID: {snapshot.state.recipient.cdoId}</Typography>
+                            </Box>
+                        ))}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSelectedTransaction(null)} color="secondary">
+                            Close
+                        </Button>
+                    </DialogActions>
+                </Dialog>
                 <Snackbar
                     open={createBudgetSuccessMessage}
                     autoHideDuration={3000}

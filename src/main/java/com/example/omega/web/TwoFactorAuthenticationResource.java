@@ -1,6 +1,7 @@
 package com.example.omega.web;
 
 import com.example.omega.service.GoogleAuthenticatorService;
+import com.example.omega.service.MailService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
 import com.example.omega.service.dto.UserDTO;
@@ -23,10 +24,11 @@ import java.io.IOException;
 @RequestMapping("/google-authenticator")
 @AllArgsConstructor
 @Slf4j
-public class GoogleAuthenticatorResource {
+public class TwoFactorAuthenticationResource {
 
     private final GoogleAuthenticatorService googleAuthenticatorService;
     private final UserService userService;
+    private final MailService mailService;
 
     @GetMapping("/generate-secret-key")
     public ResponseEntity<String> generateSecretKey() {
@@ -35,7 +37,7 @@ public class GoogleAuthenticatorResource {
     }
 
     @GetMapping("/generate-qr-code")
-    public ResponseEntity<byte[]> generateQRCode(@RequestParam String account, @RequestParam String issuer) {
+    public ResponseEntity<byte[]> generateGoogleAuthenticatorQRCode(@RequestParam String account, @RequestParam String issuer) {
         log.debug("Generating QR code for account {}", account);
         var user = userService.getUserByEmail(account);
 
@@ -61,8 +63,8 @@ public class GoogleAuthenticatorResource {
         }
     }
 
-    @PostMapping("/verify-code")
-    public ResponseEntity<?> verifyCode(@JsonView(Views.TwoFactorSecretView.class) @RequestBody UserDTO userDTO) {
+    @PostMapping("/verify-authenticator-code")
+    public ResponseEntity<?> verifyGoogleAuthenticatorCode(@JsonView(Views.TwoFactorSecretView.class) @RequestBody UserDTO userDTO) {
         var twoFactorSecret = userService.getUserById(userDTO.getId()).getTwoFactorSecret();
         var isCodeValid = googleAuthenticatorService.verifyCode(twoFactorSecret, userDTO.getTwoFactorAuthCode());
         if (isCodeValid) {
@@ -72,5 +74,31 @@ public class GoogleAuthenticatorResource {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid verification code!");
         }
     }
+
+    @PostMapping("/verification-code")
+    public void sendEmailVerificationCode(@RequestBody String email) {
+        var user = userService.getUserByEmail(email);
+
+        if (user.isEmpty()) {
+            throw new BadRequestException(String.format("User with email %s doesn't exist", email));
+        }
+
+        mailService.verificationCodeEmail(email.trim(), user.get());
+    }
+
+//    @PostMapping("/verify-email-code")
+//    public ResponseEntity<Void> verifyEmailVerificationCode(@RequestBody VerifyCodeRequest verifyCodeRequest) {
+//        var userId = verifyCodeRequest.getUserId();
+//        var code = verifyCodeRequest.getCode();
+//
+//        var user = userService.getUserById(userId);
+//        var isValid = verificationCodeService.verifyCode(user, code);
+//
+//        if (isValid) {
+//            return ResponseEntity.ok().build();
+//        } else {
+//            return ResponseEntity.badRequest().build();
+//        }
+//    }
 
 }

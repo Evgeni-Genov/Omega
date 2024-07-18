@@ -36,20 +36,6 @@ public abstract class AbstractAuditingEntity implements Serializable {
     @Column
     private Instant lastModifiedDate = Instant.now();
 
-//TODO: Uncomment when testing the other is completed
-//    @PrePersist
-//    public void setCreator() {
-//        var currentUser = SecurityUtils.getCurrentUserLogin().orElse("anonymousUser");
-//        setCreatedBy(currentUser);
-//        setLastModifiedBy(currentUser);
-//    }
-//TODO: Uncomment when testing the other is completed
-//    @PreUpdate
-//    public void setChangesAuthor() {
-//        var currentUser = SecurityUtils.getCurrentUserLogin().orElse("anonymousUser");
-//        setLastModifiedBy(currentUser);
-//    }
-
     /**
      * Sets the creator and last modifier before the entity is persisted.
      * If no authenticated user is found, a BadRequestException is thrown.

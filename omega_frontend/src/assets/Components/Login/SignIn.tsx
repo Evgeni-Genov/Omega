@@ -15,6 +15,8 @@ import {
     FormControlLabel,
     Grid,
     Link,
+    Radio,
+    RadioGroup,
     TextField,
     Typography
 } from '@mui/material';
@@ -95,9 +97,12 @@ export default function SignIn() {
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [userId, setUserId] = useState(null); // Store user ID for 2FA verification
-    const [token, setToken] = useState(null); // Store token temporarily
-    const [refreshToken, setRefreshToken] = useState(null); // Store refresh token temporarily
+    const [userId, setUserId] = useState(null);
+    const [token, setToken] = useState(null);
+    const [refreshToken, setRefreshToken] = useState(null);
+    const [selectedAuthMethod, setSelectedAuthMethod] = useState('googleAuth');
+    const [openEmailVerification, setOpenEmailVerification] = useState(false);
+    const [emailVerificationCode, setEmailVerificationCode] = useState('');
 
     const navigate = useNavigate();
 
@@ -133,10 +138,21 @@ export default function SignIn() {
             const {id, token, refreshToken, twoFactorAuthentication: twoFactorEnabled} = response.data;
 
             if (twoFactorEnabled) {
-                setUserId(id);
-                setToken(token);
-                setRefreshToken(refreshToken);
-                setOpen(true);
+                if (selectedAuthMethod === 'googleAuth') {
+                    // Handle Google Authenticator flow
+                    setUserId(id);
+                    setToken(token);
+                    setRefreshToken(refreshToken);
+                    setOpen(true);
+                } else if (selectedAuthMethod === 'emailCode') {
+                    // Send email with verification code
+                    await axiosInstance.post('/mail/verification-code', username);
+                    // Show dialog to enter verification code
+                    setUserId(id);
+                    setToken(token);
+                    setRefreshToken(refreshToken);
+                    setOpenEmailVerification(true);
+                }
             } else {
                 completeLogin(id, token, refreshToken);
             }
@@ -172,7 +188,7 @@ export default function SignIn() {
         setLoading(true);
         setVerificationCodeError('');
         try {
-            const response = await axiosInstance.post('/google-authenticator/verify-code', {
+            const response = await axiosInstance.post('/google-authenticator/verify-authenticator-code', {
                 id: userId,
                 twoFactorAuthCode: verificationCode,
             });
@@ -211,6 +227,26 @@ export default function SignIn() {
             setErrorMessage('Password reset link has been sent to your email.');
         } catch (error) {
             setErrorMessage('Failed to send password reset link. Please try again.');
+        }
+    };
+
+    const handleCloseEmailVerification = () => {
+        setOpenEmailVerification(false);
+        setEmailVerificationCode('');
+    };
+
+    const handleVerifyEmailCode = async () => {
+        try {
+            const response = await axiosInstance.post('/auth/verify-code', {
+                userId,
+                code: emailVerificationCode,
+            });
+            if (response.status === 200) {
+                completeLogin(userId, token, refreshToken);
+                handleCloseEmailVerification();
+            }
+        } catch (error) {
+            console.error('Error during email code verification:', error);
         }
     };
 
@@ -306,6 +342,22 @@ export default function SignIn() {
                                 }
                                 label="Remember me"
                             />
+                            <RadioGroup
+                                row
+                                value={selectedAuthMethod}
+                                onChange={(e) => setSelectedAuthMethod(e.target.value)}
+                            >
+                                <FormControlLabel
+                                    value="googleAuth"
+                                    control={<Radio color="primary"/>}
+                                    label="Google Authenticator"
+                                />
+                                <FormControlLabel
+                                    value="emailCode"
+                                    control={<Radio color="primary"/>}
+                                    label="Email Verification Code"
+                                />
+                            </RadioGroup>
                             <Button
                                 type="submit"
                                 fullWidth
@@ -361,6 +413,30 @@ export default function SignIn() {
                             Login
                         </PurpleButton>
                     </DialogActions>
+                    <Dialog open={openEmailVerification} onClose={handleCloseEmailVerification}>
+                        <DialogTitle>Email Verification</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Please enter the verification code sent to your email.
+                            </DialogContentText>
+                            <TextField
+                                label="Enter verification code"
+                                variant="outlined"
+                                fullWidth
+                                margin="normal"
+                                value={emailVerificationCode}
+                                onChange={(e) => setEmailVerificationCode(e.target.value)}
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseEmailVerification} color="secondary">
+                                Cancel
+                            </Button>
+                            <PurpleButton onClick={handleVerifyEmailCode} variant="contained">
+                                Verify
+                            </PurpleButton>
+                        </DialogActions>
+                    </Dialog>
                 </Dialog>
             </Container>
         </ThemeProvider>

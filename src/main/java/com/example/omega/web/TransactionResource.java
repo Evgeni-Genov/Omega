@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.javers.core.Javers;
-import org.javers.core.metamodel.object.CdoSnapshot;
 import org.javers.repository.jql.QueryBuilder;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -38,8 +37,15 @@ public class TransactionResource {
 
     @GetMapping("/stores/snapshots")
     public String getStoresSnapshots() {
-        QueryBuilder jqlQuery = QueryBuilder.byClass(Transaction.class);
-        List<CdoSnapshot> snapshots = javers.findSnapshots(jqlQuery.build());
+        var jqlQuery = QueryBuilder.byClass(Transaction.class);
+        var snapshots = javers.findSnapshots(jqlQuery.build());
+        return javers.getJsonConverter().toJson(snapshots);
+    }
+
+    @GetMapping("/snapshots/{transactionId}")
+    public String getTransactionSnapshots(@PathVariable Long transactionId) {
+        var jqlQuery = QueryBuilder.byInstanceId(transactionId, Transaction.class);
+        var snapshots = javers.findSnapshots(jqlQuery.build());
         return javers.getJsonConverter().toJson(snapshots);
     }
 

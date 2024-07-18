@@ -11,6 +11,7 @@ import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
  * Utility class for transaction-related operations in the application.
@@ -149,5 +151,32 @@ public class TransactionServiceUtil {
                 .filter(balance -> balance.getCurrency() == currency)
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Account balance not found"));
+    }
+
+    /**
+     * Calculates the total amount of funds added to and spent from a user's account within a specified time range.
+     * This method processes a list of transactions, segregating them into added funds and spent funds based on the transaction type.
+     * It then sums up the amounts for each category to provide a comprehensive overview of the user's financial activity.
+     *
+     * @param transactions A list of {@link Transaction} objects representing the user's transactions within the specified time range.
+     * @param userId       The ID of the user for whom the calculation is being performed.
+     * @return An {@link ImmutablePair} containing two {@link BigDecimal} values: the first represents the total added funds,
+     * and the second represents the total spent funds.
+     */
+    public ImmutablePair<BigDecimal, BigDecimal> calculateTotalAddedFundsAndTotalSpentInTimeRange(List<Transaction> transactions, Long userId) {
+        log.debug("Calculating total amount added and spent by user with ID: {}", userId);
+        var totalAddedFunds = transactions
+                .stream()
+                .filter(transaction -> !transaction.getIsExpense())
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        var totalSpent = transactions
+                .stream()
+                .filter(Transaction::getIsExpense)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new ImmutablePair<>(totalAddedFunds, totalSpent);
     }
 }

@@ -8,7 +8,6 @@ import com.example.omega.config.security.payload.response.MessageResponse;
 import com.example.omega.domain.User;
 import com.example.omega.domain.UserDetailsImpl;
 import com.example.omega.mapper.UserMapper;
-import com.example.omega.repository.UserRepository;
 import com.example.omega.service.MailService;
 import com.example.omega.service.UserDetailsServiceImpl;
 import com.example.omega.service.UserService;
@@ -24,7 +23,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -35,16 +33,14 @@ import java.util.UUID;
 @RequestMapping("/auth")
 @Slf4j
 @AllArgsConstructor
-public class AuthenticationController {
+public class AuthenticationResource {
 
-    private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final UserMapper userMapper;
     private final UserService userService;
     private final MailService mailService;
     private final UserDetailsServiceImpl userDetailsService;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest request) {

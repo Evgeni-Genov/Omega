@@ -62,7 +62,9 @@ public class SecurityConfig {
                         .requestMatchers("/google-authenticator/**").permitAll()
                         .requestMatchers("/account-balance/**").permitAll()
                         .requestMatchers("/transaction/**").permitAll()
+                        .requestMatchers("/api/transactions-report").authenticated()
                         .requestMatchers("/api/**").permitAll()
+
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -35,7 +35,6 @@ public class MailService {
     }
 
     //TODO: email verification, email validation, mailDTO
-
     /**
      * Create the verification code email.
      *

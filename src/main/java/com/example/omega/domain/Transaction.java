@@ -5,6 +5,7 @@ import com.example.omega.domain.enumeration.TransactionStatus;
 import com.example.omega.domain.enumeration.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.javers.core.metamodel.annotation.DiffIgnore;
 
 import java.math.BigDecimal;
 
@@ -24,16 +25,19 @@ public class Transaction extends AbstractAuditingEntity{
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
+    @DiffIgnore
     private User sender;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recipient_id")
+    @DiffIgnore
     private User recipient;
 
     @Column
     private BigDecimal amount;
 
     @Column
+    @DiffIgnore
     private String description;
 
     @Column
@@ -49,6 +53,7 @@ public class Transaction extends AbstractAuditingEntity{
     private TransactionType transactionType;
 
     @Column
+    @DiffIgnore
     private Boolean isExpense;
 
 }

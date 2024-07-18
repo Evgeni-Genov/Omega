@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -40,6 +41,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         converters.add(new StringHttpMessageConverter());
         converters.add(new ByteArrayHttpMessageConverter());
         converters.add(createJsonHttpMessageConverter());
+        converters.add(new ResourceHttpMessageConverter());
     }
 
     private HttpMessageConverter<Object> createJsonHttpMessageConverter() {
@@ -66,5 +68,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addMapping(ACCOUNT_BALANCE).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
         registry.addMapping(TRANSACTION).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
         registry.addMapping("/api/**").allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping("/mail/**").allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
     }
 }

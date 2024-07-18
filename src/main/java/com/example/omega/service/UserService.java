@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
@@ -162,7 +161,7 @@ public class UserService {
             throw new BadRequestException("Can't find users with nameTag containing: " + nameTag);
         }
 
-        return users.stream().map(userMapper::toDTO).collect(Collectors.toList());
+        return users.stream().map(userMapper::toDTO).toList();
     }
 
     /**
@@ -449,10 +448,9 @@ public class UserService {
             throw new BadRequestException("New phone number cannot be empty!");
         }
 
-        if (StringUtils.isNotBlank(user.getPhoneNumber())) {
-            if (!user.getPhoneNumber().equals(userDTO.getPhoneNumber())) {
-                throw new BadRequestException("Current phone number does not match the existing phone number!");
-            }
+        if (StringUtils.isNotBlank(user.getPhoneNumber()) &&
+                !user.getPhoneNumber().equals(userDTO.getPhoneNumber())) {
+            throw new BadRequestException("Current phone number does not match the existing phone number!");
         }
 
         user.setPhoneNumber(userDTO.getNewPhoneNumber());
