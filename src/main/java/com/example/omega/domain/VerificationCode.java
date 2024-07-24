@@ -25,7 +25,7 @@ public class VerificationCode extends AbstractAuditingEntity {
     @Column
     private Instant expirationTime;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
 }

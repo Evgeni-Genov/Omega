@@ -12,37 +12,37 @@ import java.util.List;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/account-balance")
+@RequestMapping("/api")
 @Slf4j
 public class AccountBalanceResource {
 
     private final AccountBalanceService accountBalanceService;
 
-    @PostMapping("/account-balances")
+    @PostMapping("/account-balance")
     public ResponseEntity<AccountBalanceDTO> createAccountBalance(@RequestBody AccountBalanceDTO accountBalanceDTO) {
         var result = accountBalanceService.create(accountBalanceDTO);
         return ResponseEntity.ok().body(result);
     }
 
-    @PatchMapping("/account-balances")
+    @PatchMapping("/account-balance")
     public ResponseEntity<AccountBalanceDTO> partialUpdateAccountBalance(@RequestBody AccountBalanceDTO accountBalanceDTO) {
         var result = accountBalanceService.partialUpdate(accountBalanceDTO);
         return result.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/account-balances/user/{userId}")
+    @GetMapping("/account-balance/user/{userId}")
     public ResponseEntity<List<AccountBalanceDTO>> getAllForUser(Pageable pageable, @PathVariable Long userId) {
         var page = accountBalanceService.getAllForUser(pageable, userId);
         return ResponseEntity.ok().body(page.getContent());
     }
 
-    @GetMapping("/account-balances/{id}")
+    @GetMapping("/account-balance/{id}")
     public ResponseEntity<AccountBalanceDTO> getOne(@PathVariable Long id) {
         var accountBalanceDTO = accountBalanceService.getOne(id);
         return accountBalanceDTO.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/account-balances/{id}")
+    @DeleteMapping("/account-balance/{id}")
     public ResponseEntity<Void> deleteAccountBalance(@PathVariable Long id) {
         accountBalanceService.deleteById(id);
         return ResponseEntity.noContent().build();

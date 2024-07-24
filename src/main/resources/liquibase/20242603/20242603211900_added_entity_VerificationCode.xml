@@ -16,9 +16,6 @@
             <column name="expiration_time" type="timestamp">
                 <constraints nullable="false"/>
             </column>
-            <column name="user_id" type="BIGINT">
-                <constraints nullable="false"/>
-            </column>
 
             <!-- Auditing columns -->
             <column name="created_by" type="varchar(255)"/>
@@ -34,6 +31,21 @@
                         incrementBy="1"/>
     </changeSet>
 
+    <changeSet id="add-user_id-column-to-verification-code" author="egenov">
+        <addColumn tableName="verification_code">
+            <column name="user_id" type="BIGINT"/>
+        </addColumn>
+    </changeSet>
+
     <!-- Add foreign key constraint -->
+
+    <changeSet id="add-user-foreign-key-to-verification-code" author="egenov">
+        <addForeignKeyConstraint baseTableName="verification_code"
+                                 constraintName="fk_verification_code_user"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="user_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
 
 </databaseChangeLog>

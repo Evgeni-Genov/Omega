@@ -25,6 +25,7 @@ import static com.example.omega.service.util.Constants.*;
 @Component
 public class ScheduledTasks {
 
+    private final VerificationCodeService verificationCodeService;
     @Value("${google-authenticator.secret-phone}")
     private String secretKey;
     private final VerificationCodeRepository verificationCodeRepository;
@@ -33,11 +34,12 @@ public class ScheduledTasks {
     private final PasswordResetLinkRepository passwordResetLinkRepository;
 
     public ScheduledTasks(VerificationCodeRepository verificationCodeRepository, TransactionRepository transactionRepository,
-                          UserRepository userRepository, PasswordResetLinkRepository passwordResetLinkRepository) {
+                          UserRepository userRepository, PasswordResetLinkRepository passwordResetLinkRepository, VerificationCodeService verificationCodeService) {
         this.verificationCodeRepository = verificationCodeRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.passwordResetLinkRepository = passwordResetLinkRepository;
+        this.verificationCodeService = verificationCodeService;
     }
 
     /**
@@ -61,7 +63,7 @@ public class ScheduledTasks {
     public void deleteExpiredVerificationCodes() {
         log.debug("Starting deletion of all expired Verification Codes!");
         var now = Instant.now();
-        verificationCodeRepository.deleteByExpirationTimeBefore(now);
+        verificationCodeService.deleteExpiredVerificationCodes(now);
         log.debug("Deletion of all expired Verification Codes completed!");
     }
 

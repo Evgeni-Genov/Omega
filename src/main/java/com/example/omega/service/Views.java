@@ -37,4 +37,7 @@ public class Views {
 
     public interface TwoFactorSecretView {
     }
+
+    public interface EmailVerificationCodeView{
+    }
 }

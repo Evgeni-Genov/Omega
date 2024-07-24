@@ -29,10 +29,7 @@ public class Constants {
      * WebMvcConfig constants
      */
     public static final String AUTH = "/auth/**";
-    public static final String USER = "/user/**";
-    public static final String GOOGLE_AUTHENTICATOR = "/google-authenticator/**";
-    public static final String ACCOUNT_BALANCE = "/account-balance/**";
-    public static final String TRANSACTION = "/transaction/**";
+    public static final String API = "/api/**";
 
     public static final String[] ALLOWED_METHODS = {
             HttpMethod.OPTIONS.name(),

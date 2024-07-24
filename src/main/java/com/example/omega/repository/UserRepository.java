@@ -33,4 +33,9 @@ public interface UserRepository extends JpaRepository<User, Long>, CrudRepositor
 
     @Query("SELECT u.twoFactorAuthentication FROM User u WHERE u.username = :username")
     boolean isTwoFactorAuthenticationEnabled(@Param("username") String username);
+
+    @Query("SELECT u.email FROM User u WHERE u.username = :username")
+    String findEmailByUsername(@Param("username") String username);
+
+//    List<User> findByVerificationCodeExpirationTimeBefore(Instant time);
 }
