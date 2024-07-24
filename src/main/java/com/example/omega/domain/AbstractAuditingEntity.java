@@ -45,7 +45,7 @@ public abstract class AbstractAuditingEntity implements Serializable {
     @PrePersist
     public void setCreator() {
         var currentUser = SecurityUtils.getCurrentUserLogin()
-                .orElseThrow(() -> new BadRequestException("No authenticated user found"));
+                .orElse("system");
         setCreatedBy(currentUser);
         setLastModifiedBy(currentUser);
     }
@@ -59,7 +59,7 @@ public abstract class AbstractAuditingEntity implements Serializable {
     @PreUpdate
     public void setChangesAuthor() {
         var currentUser = SecurityUtils.getCurrentUserLogin()
-                .orElseThrow(() -> new BadRequestException("No authenticated user found"));
+                .orElse("system");
         setLastModifiedBy(currentUser);
     }
 

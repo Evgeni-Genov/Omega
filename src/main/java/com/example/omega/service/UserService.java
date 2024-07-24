@@ -67,6 +67,13 @@ public class UserService {
         return userMapper.toDTO(savedUser);
     }
 
+    /**
+     * Checks if a user is enabled based on their username.
+     *
+     * @param username The username of the user to check.
+     * @return boolean True if the user is enabled, false otherwise.
+     * @throws BadRequestException if no user is found with the given username.
+     */
     public boolean isUserEnabled(String username) {
         var user = userRepository.findByUsername(username);
         if (user.isEmpty()) {
@@ -76,12 +83,24 @@ public class UserService {
         return user.get().getEnabled();
     }
 
+    /**
+     * Activates a user account.
+     *
+     * @param userDTO The UserDTO containing the user information to activate.
+     */
     public void activateUser(UserDTO userDTO) {
         userDTO.setEnabled(true);
         userRepository.save(userMapper.toEntity(userDTO));
         log.debug("User activated successfully: {}", userDTO);
     }
 
+    /**
+     * Finds a user by their email verification token.
+     *
+     * @param token The email verification token to search for.
+     * @return UserDTO The user information associated with the given token.
+     * @throws BadRequestException if no user is found with the given token.
+     */
     public UserDTO findUserByEmailVerificationToken(String token) {
         log.debug("Find User by email verification token: {}", token);
         var user = userRepository.getUserByEmailVerificationTokenEquals(token);
@@ -182,6 +201,13 @@ public class UserService {
         return userMapper.toDTO(user.get());
     }
 
+    /**
+     * Updates the two-step verification setting for a user.
+     *
+     * @param userId                      The ID of the user whose two-step verification setting is to be updated.
+     * @param twoFactorAuthenticationFlag The new state of the two-factor authentication flag.
+     * @throws BadRequestException if the user with the given ID is not found.
+     */
     public void updateUserTwoStepVerification(Long userId, boolean twoFactorAuthenticationFlag) {
         log.debug("Request to update two-step verification for User with ID: {} to {}", userId, twoFactorAuthenticationFlag);
         var user = userServiceUtil.validateAndGetUser(userId);
@@ -223,6 +249,14 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
+    /**
+     * Resets the password for a given user.
+     *
+     * @param user    The User entity whose password is to be reset.
+     * @param userDTO The UserDTO containing the new password information.
+     * @return UserDTO The updated user information after password reset.
+     * @throws BadRequestException if the new password and confirm password don't match.
+     */
     public UserDTO passwordReset(User user, UserDTO userDTO) {
         log.debug("Request to reset password!");
 
@@ -267,13 +301,21 @@ public class UserService {
      * @return The generated verification code.
      * @throws BadRequestException if the user is not found.
      */
+    @Transactional
     public String returnSavedVerificationCode(User user) {
         var verificationCode = verificationCodeService.generateVerificationCode(user);
         user.setVerificationCode(verificationCode);
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
         return verificationCode.getCode();
     }
 
+    /**
+     * Generates and saves a password reset link for a given user.
+     *
+     * @param optionalUser An Optional containing the User for whom to generate the password reset link.
+     * @return String The token of the generated password reset link.
+     * @throws BadRequestException if the Optional<User> is empty (user not found).
+     */
     public String returnSavedPasswordResetLink(Optional<User> optionalUser) {
         if (optionalUser.isEmpty()) {
             throw new BadRequestException("User not found!");
@@ -290,11 +332,12 @@ public class UserService {
     /**
      * Verifies the provided code against the verification code associated with the user.
      *
-     * @param user The user for whom the verification code is verified.
-     * @param code The code to verify.
+     * @param userDTO The userDTO for whom the verification code is verified.
+     * @param code    The code to verify.
      * @return {@code true} if the code is valid and not expired, {@code false} otherwise.
      */
-    public boolean verifyCode(User user, String code) {
+    public boolean verifyCode(UserDTO userDTO, String code) {
+        var user = userServiceUtil.validateAndGetUser(userDTO.getId());
         var verificationCode = user.getVerificationCode();
 
         if (verificationCode != null
@@ -303,12 +346,18 @@ public class UserService {
             user.setVerificationCode(null);
             userRepository.save(user);
             return true;
-
         }
 
         return false;
     }
 
+    /**
+     * Updates the two-factor authentication secret for a user.
+     *
+     * @param user      The User entity to update.
+     * @param secretKey The new two-factor authentication secret key to set.
+     * @throws IllegalArgumentException if user is null or secretKey is null or empty.
+     */
     public void updateTwoFactorSecret(User user, String secretKey) {
         user.setTwoFactorSecret(secretKey);
         userRepository.save(user);
@@ -441,6 +490,13 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
+    /**
+     * Updates the phone number for a user.
+     *
+     * @param userDTO The UserDTO containing the user's ID, current phone number, and new phone number.
+     * @return UserDTO The updated user information.
+     * @throws BadRequestException If the new phone number is empty or if the current phone number doesn't match the existing one.
+     */
     public UserDTO updatePhoneNumber(UserDTO userDTO) {
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());
 
@@ -458,12 +514,26 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
+    /**
+     * Sets the budgeting flag for a user.
+     *
+     * @param userId             The ID of the user.
+     * @param budgetingFlagValue The boolean value to set for the budgeting flag.
+     * @throws BadRequestException If the user is not found.
+     */
     public void setUserBudgeting(Long userId, boolean budgetingFlagValue) {
         var user = userServiceUtil.validateAndGetUser(userId);
         user.setIsBudgetingEnabled(budgetingFlagValue);
         userRepository.save(user);
     }
 
+    /**
+     * Retrieves the content of a user's avatar file.
+     *
+     * @param filename The name of the avatar file.
+     * @return byte[] The content of the avatar file.
+     * @throws BadRequestException If there's an error reading the avatar file.
+     */
     public byte[] getAvatarContent(String filename) {
         try {
             var filePath = Paths.get(USER_PROFILE_DIR).resolve(filename).normalize();
@@ -471,5 +541,15 @@ public class UserService {
         } catch (IOException e) {
             throw new BadRequestException("Error reading avatar file: " + filename);
         }
+    }
+
+    /**
+     * Finds the email address associated with a given username.
+     *
+     * @param username The username to search for.
+     * @return String The email address associated with the username.
+     */
+    public String findEmailByUsername(String username) {
+        return userRepository.findEmailByUsername(username);
     }
 }

@@ -77,10 +77,17 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="add-verification_code_id-column-to-user" author="egenov">
+        <addColumn tableName="user">
+            <column name="verification_code_id" type="BIGINT"/>
+        </addColumn>
+    </changeSet>
+
     <!-- Add foreign key constraints here -->
-    <changeSet id="add-verification-code-foreign-key" author="egenov">
+
+    <changeSet id="add-verification-code-foreign-key-to-user" author="egenov">
         <addForeignKeyConstraint baseTableName="user"
-                                 constraintName="fk_verification_code_user_id"
+                                 constraintName="fk_user_verification_code"
                                  referencedTableName="verification_code"
                                  referencedColumnNames="id"
                                  baseColumnNames="verification_code_id"

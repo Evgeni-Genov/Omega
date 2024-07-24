@@ -34,9 +34,12 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from 'react-router-dom';
 import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
-import {PieChart} from '@mui/x-charts';
 import InfoIcon from "@mui/icons-material/Info";
 import DescriptionIcon from '@mui/icons-material/Description';
+import {ArcElement, Chart as ChartJS, Legend, Tooltip} from 'chart.js';
+import {Doughnut} from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const PurpleButton = styled(Button)(({theme}) => ({
     backgroundColor: 'rebeccapurple',
@@ -238,8 +241,8 @@ const MainPage = () => {
                 if (!userId) {
                     throw new Error('User ID not found');
                 }
-                const accountResponse = await axiosInstance.get(`/account-balance/account-balances/user/${userId}`);
-                const transactionsResponse = await axiosInstance.get(`/transaction/all-transactions/${userId}`);
+                const accountResponse = await axiosInstance.get(`/api/account-balance/user/${userId}`);
+                const transactionsResponse = await axiosInstance.get(`/api/transaction/${userId}`);
                 const accountData = accountResponse.data.length > 0 ? accountResponse.data[0] : {balance: 0};
                 setAccountBalance(accountData);
                 setTransactions(transactionsResponse.data);
@@ -287,7 +290,7 @@ const MainPage = () => {
             try {
                 const token = localStorage.getItem('TOKEN');
                 const userId = localStorage.getItem('USER_ID');
-                const response = await axiosInstance.get(`/user/avatar/user/${userId}`, {
+                const response = await axiosInstance.get(`/api/avatar/user/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     },
@@ -308,7 +311,7 @@ const MainPage = () => {
         setSearchLoading(true);
         try {
             const token = localStorage.getItem('TOKEN');
-            const response = await axiosInstance.get(`/user/search-user/${query}`, {
+            const response = await axiosInstance.get(`/api/search-user/${query}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -404,7 +407,7 @@ const MainPage = () => {
         try {
             const token = localStorage.getItem('TOKEN');
             const userId = parseInt(localStorage.getItem('USER_ID') || '', 10);
-            const response = await axiosInstance.post('/transaction/send-funds', {
+            const response = await axiosInstance.post('/api/transaction/send-funds', {
                 ...transactionDetails,
                 senderId: userId,
                 transactionType: 'TRANSFER',
@@ -449,7 +452,7 @@ const MainPage = () => {
         try {
             const token = localStorage.getItem('TOKEN');
             const userId = parseInt(localStorage.getItem('USER_ID') || '', 10);
-            const response = await axiosInstance.post('/transaction/add-funds', {
+            const response = await axiosInstance.post('/api/transaction/add-funds', {
                 cardNumber: addFundsDetails.cardNumber.replaceAll(" ", ""),
                 cardOwner: addFundsDetails.cardOwner,
                 expiryDate: addFundsDetails.expiryDate,
@@ -663,7 +666,7 @@ const MainPage = () => {
     const fetchTransactionSnapshots = async (transactionId: number) => {
         try {
             const token = localStorage.getItem('TOKEN');
-            const response = await axiosInstance.get(`/transaction/snapshots/${transactionId}`, {
+            const response = await axiosInstance.get(`/api/snapshots/${transactionId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -707,6 +710,39 @@ const MainPage = () => {
         } catch (error) {
             console.error('Failed to download report:', error);
             setErrorMessage('Failed to download report. Please try again.');
+        }
+    };
+
+    const doughnutLabelsPlugin = {
+        id: 'doughnutLabels',
+        afterDraw(chart, args, options) {
+            const {ctx, chartArea: {top, bottom, left, right, width, height}} = chart;
+            ctx.save();
+
+            const centerX = (left + right) / 2;
+            const centerY = (top + bottom) / 2;
+
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+                chart.getDatasetMeta(datasetIndex).data.forEach((datapoint, index) => {
+                    const {startAngle, endAngle, innerRadius, outerRadius} = datapoint;
+                    const middleAngle = startAngle + (endAngle - startAngle) / 2;
+
+                    const x = centerX + Math.cos(middleAngle) * (outerRadius + innerRadius) / 2;
+                    const y = centerY + Math.sin(middleAngle) * (outerRadius + innerRadius) / 2;
+
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = 'black';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const value = dataset.data[index];
+                    const percentage = ((value / dataset.data.reduce((a, b) => a + b)) * 100).toFixed(2) + '%';
+
+                    ctx.fillText(`${formatCurrency(value)} (${percentage})`, x, y);
+                });
+            });
+
+            ctx.restore();
         }
     };
 
@@ -1103,7 +1139,7 @@ const MainPage = () => {
                     </DialogActions>
                 </Dialog>
 
-                <Dialog open={viewBudget} onClose={() => setViewBudget(false)} maxWidth="sm" fullWidth>
+                <Dialog open={viewBudget} onClose={() => setViewBudget(false)} maxWidth="md" fullWidth>
                     <DialogTitle style={{display: 'flex', alignItems: 'center'}}>
                         <AccountBalanceIcon style={{marginRight: '8px', color: 'rebeccapurple'}}/>
                         Active Budget
@@ -1114,80 +1150,54 @@ const MainPage = () => {
                                 <Typography variant="h6" gutterBottom style={{textAlign: 'center', marginTop: '16px'}}>
                                     {formatDateWithoutTime(budgets[0]?.startDate)} - {formatDateWithoutTime(budgets[0]?.endDate)}
                                 </Typography>
-                                <div style={{display: 'flex', justifyContent: 'center', marginTop: '16px'}}>
-                                    <PieChart
-                                        series={[
-                                            {
-                                                data: [
-                                                    {
-                                                        id: 'Money Spent',
-                                                        label: 'Money Spent',
-                                                        value: totalSpent,
-                                                        color: '#FF0000',
-                                                    },
-                                                    {
-                                                        id: 'Money Left',
-                                                        label: 'Money Left',
-                                                        value: budgets[0]?.budget - totalSpent,
-                                                        color: '#00D100',
-                                                    },
-                                                ],
+                                <div style={{
+                                    height: '400px',
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                }}>
+                                    <Doughnut
+                                        data={{
+                                            labels: ['Money Spent', 'Money Left'],
+                                            datasets: [{
+                                                data: [totalSpent, budgets[0]?.budget - totalSpent],
+                                                backgroundColor: ['#DAA520', '#663399'],  // Rebeccapurple for left, Goldenrod for spent
+                                                hoverBackgroundColor: ['#DAA520', '#663399']  // Same colors for hover effect
+                                            }]
+                                        }}
+                                        options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: {
+                                                    position: 'bottom',
+                                                },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: function (context) {
+                                                            let label = context.label || '';
+                                                            if (label) {
+                                                                label += ': ';
+                                                            }
+                                                            if (context.parsed !== null) {
+                                                                label += formatCurrency(context.parsed);
+                                                            }
+                                                            return label;
+                                                        }
+                                                    }
+                                                },
+                                                title: {
+                                                    display: true,
+                                                    text: `Budget Overview: ${formatCurrency(budgets[0]?.budget)}`,
+                                                    font: {
+                                                        size: 16
+                                                    }
+                                                },
+                                                doughnutLabels: true
                                             },
-                                        ]}
-                                        width={400}
-                                        height={300}
-                                        margin={{top: 40, right: 200, bottom: 80, left: 80}}
-                                        innerRadius={0.5}
-                                        padAngle={0.7}
-                                        cornerRadius={3}
-                                        activeOuterRadiusOffset={8}
-                                        colors={['red', 'green']}
-                                        borderWidth={1}
-                                        borderColor={{from: 'color', modifiers: [['darker', 0.2]]}}
-                                        arcLinkLabelsSkipAngle={10}
-                                        arcLinkLabelsTextColor="#333333"
-                                        arcLinkLabelsThickness={2}
-                                        arcLinkLabelsColor={{from: 'color'}}
-                                        arcLabelsSkipAngle={10}
-                                        arcLabelsTextColor={{from: 'color', modifiers: [['darker', 2]]}}
-                                        legends={[
-                                            {
-                                                anchor: 'right',
-                                                direction: 'column',
-                                                justify: false,
-                                                translateX: 140,
-                                                translateY: 0,
-                                                itemsSpacing: 0,
-                                                itemWidth: 150,
-                                                itemHeight: 20,
-                                                itemTextColor: '#999',
-                                                itemDirection: 'left-to-right',
-                                                itemOpacity: 1,
-                                                symbolSize: 18,
-                                                symbolShape: 'circle',
-                                                effects: [
-                                                    {
-                                                        on: 'hover',
-                                                        style: {
-                                                            itemTextColor: '#000',
-                                                        },
-                                                    },
-                                                ],
-                                                data: [
-                                                    {
-                                                        id: 'Money Spent',
-                                                        label: `Money Spent: ${formatCurrency(totalSpent)}`,
-                                                        color: 'red',
-                                                    },
-                                                    {
-                                                        id: 'Money Left',
-                                                        label: `Money Left: ${formatCurrency(budgets[0]?.budget - totalSpent)}`,
-                                                        color: 'green',
-                                                    },
-                                                ],
-                                                format: (value) => `${value.id}: ${value.label}`,
-                                            },
-                                        ]}
+                                        }}
+                                        plugins={[doughnutLabelsPlugin]}
                                     />
                                 </div>
                             </>

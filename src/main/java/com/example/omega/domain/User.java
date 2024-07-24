@@ -78,7 +78,8 @@ public class User extends AbstractAuditingEntity {
     @Enumerated(EnumType.STRING)
     private Roles role;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "verification_code_id", referencedColumnName = "id")
     private VerificationCode verificationCode;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
@@ -103,11 +104,6 @@ public class User extends AbstractAuditingEntity {
 //    @Column
 //    @JoinColumn(unique = true)
 //    private UserDetailsImpl userDetails;
-
-    public void setVerificationCode(VerificationCode verificationCode) {
-        this.verificationCode = verificationCode;
-        verificationCode.setUser(this);
-    }
 
     public void setPasswordResetLink(PasswordResetLink passwordResetLink) {
         this.passwordResetLink = passwordResetLink;

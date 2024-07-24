@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'https://localhost:8080',
+    baseURL: 'http://localhost:8080',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -14,7 +14,7 @@ async function refreshToken() {
     }
 
     try {
-        const response = await axios.post('https://localhost:8080/auth/refresh-token', refreshToken, {
+        const response = await axios.post('http://localhost:8080/auth/refresh-token', refreshToken, {
             headers: {
                 'Content-Type': 'text/plain',
             },

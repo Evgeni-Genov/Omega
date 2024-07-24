@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/google-authenticator")
+@RequestMapping("/api")
 @AllArgsConstructor
 @Slf4j
 public class TwoFactorAuthenticationResource {
@@ -30,13 +30,13 @@ public class TwoFactorAuthenticationResource {
     private final UserService userService;
     private final MailService mailService;
 
-    @GetMapping("/generate-secret-key")
+    @GetMapping("/google-authenticator/generate-secret-key")
     public ResponseEntity<String> generateSecretKey() {
         var secretKey = googleAuthenticatorService.generateSecretKey();
         return ResponseEntity.ok(secretKey);
     }
 
-    @GetMapping("/generate-qr-code")
+    @GetMapping("/google-authenticator/generate-qr-code")
     public ResponseEntity<byte[]> generateGoogleAuthenticatorQRCode(@RequestParam String account, @RequestParam String issuer) {
         log.debug("Generating QR code for account {}", account);
         var user = userService.getUserByEmail(account);
@@ -63,7 +63,7 @@ public class TwoFactorAuthenticationResource {
         }
     }
 
-    @PostMapping("/verify-authenticator-code")
+    @PostMapping("/google-authenticator/verify-authenticator-code")
     public ResponseEntity<?> verifyGoogleAuthenticatorCode(@JsonView(Views.TwoFactorSecretView.class) @RequestBody UserDTO userDTO) {
         var twoFactorSecret = userService.getUserById(userDTO.getId()).getTwoFactorSecret();
         var isCodeValid = googleAuthenticatorService.verifyCode(twoFactorSecret, userDTO.getTwoFactorAuthCode());
@@ -75,8 +75,8 @@ public class TwoFactorAuthenticationResource {
         }
     }
 
-    @PostMapping("/verification-code")
-    public void sendEmailVerificationCode(@RequestBody String email) {
+    @PostMapping("/email-verification-code")
+    public void sendEmailVerificationCode(@RequestParam String email) {
         var user = userService.getUserByEmail(email);
 
         if (user.isEmpty()) {
@@ -86,19 +86,16 @@ public class TwoFactorAuthenticationResource {
         mailService.verificationCodeEmail(email.trim(), user.get());
     }
 
-//    @PostMapping("/verify-email-code")
-//    public ResponseEntity<Void> verifyEmailVerificationCode(@RequestBody VerifyCodeRequest verifyCodeRequest) {
-//        var userId = verifyCodeRequest.getUserId();
-//        var code = verifyCodeRequest.getCode();
-//
-//        var user = userService.getUserById(userId);
-//        var isValid = verificationCodeService.verifyCode(user, code);
-//
-//        if (isValid) {
-//            return ResponseEntity.ok().build();
-//        } else {
-//            return ResponseEntity.badRequest().build();
-//        }
-//    }
+    @PostMapping("/verify-email-code")
+    public ResponseEntity<Void> verifyEmailVerificationCode(@JsonView(Views.EmailVerificationCodeView.class) @RequestBody UserDTO userDTO) {
+        var user = userService.getUserById(userDTO.getId());
+        var isValid = userService.verifyCode(user, userDTO.getEmailVerificationCode());
+
+        if (isValid) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
 }

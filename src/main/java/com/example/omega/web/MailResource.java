@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/mail")
+@RequestMapping("/api")
 @Slf4j
 public class MailResource {
 

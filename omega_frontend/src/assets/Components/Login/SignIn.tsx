@@ -139,15 +139,20 @@ export default function SignIn() {
 
             if (twoFactorEnabled) {
                 if (selectedAuthMethod === 'googleAuth') {
-                    // Handle Google Authenticator flow
                     setUserId(id);
                     setToken(token);
                     setRefreshToken(refreshToken);
                     setOpen(true);
                 } else if (selectedAuthMethod === 'emailCode') {
-                    // Send email with verification code
-                    await axiosInstance.post('/mail/verification-code', username);
-                    // Show dialog to enter verification code
+                    const emailResponse = await axiosInstance.get(`/api/user/email/${username}`);
+                    const email = emailResponse.data;
+
+                    await axiosInstance.post('/api/email-verification-code', {}, {
+                        params: {
+                            email: email,
+                        },
+                    });
+
                     setUserId(id);
                     setToken(token);
                     setRefreshToken(refreshToken);
@@ -188,7 +193,7 @@ export default function SignIn() {
         setLoading(true);
         setVerificationCodeError('');
         try {
-            const response = await axiosInstance.post('/google-authenticator/verify-authenticator-code', {
+            const response = await axiosInstance.post('/api/google-authenticator/verify-authenticator-code', {
                 id: userId,
                 twoFactorAuthCode: verificationCode,
             });
@@ -237,9 +242,9 @@ export default function SignIn() {
 
     const handleVerifyEmailCode = async () => {
         try {
-            const response = await axiosInstance.post('/auth/verify-code', {
-                userId,
-                code: emailVerificationCode,
+            const response = await axiosInstance.post('/api/verify-email-code', {
+                id: userId,
+                emailVerificationCode: emailVerificationCode,
             });
             if (response.status === 200) {
                 completeLogin(userId, token, refreshToken);
@@ -413,30 +418,30 @@ export default function SignIn() {
                             Login
                         </PurpleButton>
                     </DialogActions>
-                    <Dialog open={openEmailVerification} onClose={handleCloseEmailVerification}>
-                        <DialogTitle>Email Verification</DialogTitle>
-                        <DialogContent>
-                            <DialogContentText>
-                                Please enter the verification code sent to your email.
-                            </DialogContentText>
-                            <TextField
-                                label="Enter verification code"
-                                variant="outlined"
-                                fullWidth
-                                margin="normal"
-                                value={emailVerificationCode}
-                                onChange={(e) => setEmailVerificationCode(e.target.value)}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleCloseEmailVerification} color="secondary">
-                                Cancel
-                            </Button>
-                            <PurpleButton onClick={handleVerifyEmailCode} variant="contained">
-                                Verify
-                            </PurpleButton>
-                        </DialogActions>
-                    </Dialog>
+                </Dialog>
+                <Dialog open={openEmailVerification} onClose={handleCloseEmailVerification}>
+                    <DialogTitle>Email Verification</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            Please enter the verification code sent to your email.
+                        </DialogContentText>
+                        <TextField
+                            label="Enter verification code"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={emailVerificationCode}
+                            onChange={(e) => setEmailVerificationCode(e.target.value)}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseEmailVerification} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleVerifyEmailCode} variant="contained">
+                            Verify
+                        </PurpleButton>
+                    </DialogActions>
                 </Dialog>
             </Container>
         </ThemeProvider>

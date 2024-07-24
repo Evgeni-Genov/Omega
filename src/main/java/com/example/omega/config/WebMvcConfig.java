@@ -63,11 +63,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping(AUTH).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping(USER).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping(GOOGLE_AUTHENTICATOR).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping(ACCOUNT_BALANCE).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping(TRANSACTION).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping("/api/**").allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
-        registry.addMapping("/mail/**").allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
+        registry.addMapping(API).allowedOrigins(cors).allowedMethods(ALLOWED_METHODS);
     }
 }

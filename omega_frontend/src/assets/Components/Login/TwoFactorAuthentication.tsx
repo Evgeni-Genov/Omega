@@ -54,7 +54,7 @@ const TwoFactorAuthentication = ({userId, email, twoFactorAuthentication = false
         setLoading(true);
         setError('');
         try {
-            const response = await axiosInstance.post('/user/update-2fa', {
+            const response = await axiosInstance.post('/api/update-2fa', {
                 id: userId,
                 twoFactorAuthentication: enable
             });
@@ -75,7 +75,7 @@ const TwoFactorAuthentication = ({userId, email, twoFactorAuthentication = false
         setLoading(true);
         setError('');
         try {
-            const response = await axiosInstance.get('/google-authenticator/generate-qr-code', {
+            const response = await axiosInstance.get('/api/google-authenticator/generate-qr-code', {
                 params: {account: email, issuer: 'Omega'},
                 responseType: 'arraybuffer'
             });

@@ -69,7 +69,7 @@ export default function ResetPassword() {
         }
 
         try {
-            await axiosInstance.post(`/user/reset-password/confirm?token=${token}`, {
+            await axiosInstance.post(`/api/reset-password/confirm?token=${token}`, {
                 id: userId,
                 newPassword,
                 confirmNewPassword

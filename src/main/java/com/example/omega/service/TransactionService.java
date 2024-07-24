@@ -49,7 +49,7 @@ public class TransactionService {
      * @throws BadRequestException if the sender does not have sufficient funds or if the transaction amount exceeds the sender's budget.
      */
     @Transactional
-    public TransactionDTO sendMoney(TransactionDTO transactionDTO) {
+    public TransactionDTO sendFunds(TransactionDTO transactionDTO) {
         log.debug("Sending Money to user with nameTag: {} from user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
         var sender = userService.getUserById(transactionDTO.getSenderId());
         var senderBudgetingFlag = sender.getIsBudgetingEnabled();
@@ -127,6 +127,13 @@ public class TransactionService {
         return saveTransaction(transactionDTO);
     }
 
+    @Transactional
+    public TransactionDTO requestFunds(TransactionDTO transactionDTO) {
+        log.debug("Requesting funds from user with nameTag: {} to user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
+
+        return saveTransaction(transactionDTO);
+    }
+
     /**
      * Retrieves all transactions for a given user, either as the recipient or the sender.
      * This method fetches a paginated list of transactions where the user is involved,
@@ -137,7 +144,21 @@ public class TransactionService {
      * @return a page of TransactionDTO objects representing the user's transactions.
      */
     public Page<TransactionDTO> getAllTransactionsForAUser(Pageable pageable, Long userId) {
-        return transactionRepository.findAllByRecipientAndSender(userId, pageable)
+        return transactionRepository
+                .findAllByRecipientAndSender(userId, pageable)
+                .map(transactionMapper::toDTO);
+    }
+
+    /**
+     * Retrieves all transactions between two specified users and converts them to DTOs.
+     *
+     * @param userId      the ID of the first user
+     * @param otherUserId the ID of the second user
+     * @return a list of TransactionDTO objects representing the transactions between the two users
+     */
+    public Page<TransactionDTO> getAllTransactionBetweenTwoUsers(Pageable pageable, Long userId, Long otherUserId) {
+        return transactionRepository
+                .findByUserIdAndOtherUserId(userId, otherUserId, pageable)
                 .map(transactionMapper::toDTO);
     }
 

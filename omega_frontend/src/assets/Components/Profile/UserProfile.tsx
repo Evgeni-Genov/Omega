@@ -129,7 +129,7 @@ const UserProfile = () => {
 
             try {
                 const token = localStorage.getItem('TOKEN');
-                const response = await axiosInstance.get(`/user/user/${userId}`, {
+                const response = await axiosInstance.get(`/api/user/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -175,7 +175,7 @@ const UserProfile = () => {
             setVisibleSection(section);
             try {
                 const token = localStorage.getItem('TOKEN');
-                const response = await axiosInstance.get(`/user/user/${userId}`, {
+                const response = await axiosInstance.get(`/api/user/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -248,7 +248,7 @@ const UserProfile = () => {
 
         try {
             const token = localStorage.getItem('TOKEN');
-            const response = await axiosInstance.patch('/user/update/profile', formState, {
+            const response = await axiosInstance.patch('/api/update/profile', formState, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -302,7 +302,7 @@ const UserProfile = () => {
 
         try {
             const token = localStorage.getItem('TOKEN');
-            const response = await axiosInstance.post('/user/upload-avatar', formData, {
+            const response = await axiosInstance.post('/api/upload-avatar', formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data',
@@ -343,18 +343,18 @@ const UserProfile = () => {
 
         switch (editField) {
             case 'email':
-                endpoint = '/user/update/email';
+                endpoint = '/api/update/email';
                 payload.newEmail = formState.newEmail;
                 payload.email = userData.email;
                 break;
             case 'password':
-                endpoint = '/user/update/password';
+                endpoint = '/api/update/password';
                 payload.password = formState.password;
                 payload.newPassword = formState.newPassword;
                 payload.confirmNewPassword = formState.confirmNewPassword;
                 break;
             case 'phoneNumber':
-                endpoint = '/user/update/number';
+                endpoint = '/api/update/number';
                 payload.newPhoneNumber = formState.newPhoneNumber.startsWith('+') ? formState.newPhoneNumber : `+${formState.newPhoneNumber}`;
                 payload.phoneNumber = formState.phoneNumber;
                 break;
@@ -397,7 +397,7 @@ const UserProfile = () => {
         }
     };
 
-    const avatarUrl = userData.avatar ? `https://localhost:8080/user/avatar/user/${userId}` : null;
+    const avatarUrl = userData.avatar ? `http://localhost:8080/api/avatar/user/${userId}` : null;
 
     return (
         <Container maxWidth="md" className="user-profile" sx={{paddingTop: '20px'}}>

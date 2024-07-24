@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,7 +31,7 @@ import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api")
 @Slf4j
 public class UserResource {
 
@@ -183,6 +184,15 @@ public class UserResource {
         securityUtils.canCurrentUserAccessThisData(principal, userDTO.getId());
         var updatedUser = userService.updatePhoneNumber(userDTO);
         return ResponseEntity.ok().body(updatedUser);
+    }
+
+    @GetMapping("/user/email/{username}")
+    public ResponseEntity<String> findEmailByUsername(@PathVariable String username) {
+        var email = userService.findEmailByUsername(username);
+        if (StringUtils.isBlank(email)) {
+            throw new BadRequestException("Email is missing!");
+        }
+        return ResponseEntity.ok(email);
     }
 
     //    @PutMapping("/update/username")

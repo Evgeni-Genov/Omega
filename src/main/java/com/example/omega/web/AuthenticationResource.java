@@ -91,7 +91,7 @@ public class AuthenticationResource {
         var token = generateEmailVerificationToken();
         setEmailVerificationToken(user, token);
         userService.createUser(userMapper.toDTO(user));
-        var verificationLink = "http://localhost:8080/mail/verify-email?token=" + token;
+        var verificationLink = "http://localhost:8080/api/verify-email?token=" + token;
         mailService.accountActivationEmail(user.getEmail(), verificationLink);
         return ResponseEntity.ok(new MessageResponse("SUCCESSFUL_REGISTRATION"));
     }

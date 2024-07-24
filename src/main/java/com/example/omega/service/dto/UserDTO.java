@@ -23,7 +23,8 @@ public class UserDTO extends AbstractAuditingDTO {
 
     @JsonView({Views.UpdatePasswordView.class, Views.AllUsersWithDetails.class, Views.UpdateEmailView.class,
             Views.UpdateNonCredentialView.class, Views.PasswordResetView.class, Views.TwoFactorAuthenticationView.class,
-            Views.TwoFactorSecretView.class, Views.UpdateUsernameView.class, Views.UpdatePhoneNumberView.class})
+            Views.TwoFactorSecretView.class, Views.UpdateUsernameView.class, Views.UpdatePhoneNumberView.class,
+            Views.EmailVerificationCodeView.class})
     private Long id;
 
     @JsonView({Views.CreateView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class, Views.UpdateUsernameView.class})
@@ -106,6 +107,9 @@ public class UserDTO extends AbstractAuditingDTO {
 
     @JsonView({Views.PersonalView.class})
     private String avatar;
+
+    @JsonView({Views.EmailVerificationCodeView.class})
+    private String emailVerificationCode;
 
     @JsonView({Views.AllUsersWithDetails.class})
     @Enumerated(EnumType.STRING)
