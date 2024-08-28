@@ -4,8 +4,10 @@ import com.example.omega.domain.Transaction;
 import com.example.omega.domain.User;
 import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
+import com.example.omega.service.dto.TransactionSummaryDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface TransactionMapper {
@@ -26,6 +28,14 @@ public interface TransactionMapper {
     @Mapping(target = "currency", constant = "USD")
     @Mapping(target = "isExpense", constant = "false")
     TransactionDTO toTransactionDTO(CreditCardDTO creditCardDTO);
+
+    @Mapping(source = "sender", target = "senderId")
+    @Mapping(source = "recipient", target = "recipientId")
+    TransactionSummaryDTO toTransactionSummaryDTO(Transaction transaction);
+
+    default Page<TransactionSummaryDTO> toTransactionSummaryDTOPage(Page<Transaction> transactionPage) {
+        return transactionPage.map(this::toTransactionSummaryDTO);
+    }
 
     default User fromId(Long userId) {
         if (userId == null) {

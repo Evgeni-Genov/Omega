@@ -1,10 +1,14 @@
 package com.example.omega.service;
 
+import com.example.omega.domain.enumeration.Currency;
 import com.example.omega.domain.enumeration.TransactionStatus;
+import com.example.omega.domain.enumeration.TransactionType;
 import com.example.omega.mapper.TransactionMapper;
 import com.example.omega.repository.TransactionRepository;
+import com.example.omega.repository.UserRepository;
 import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
+import com.example.omega.service.dto.TransactionSummaryDTO;
 import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.TransactionServiceUtil;
 import jakarta.transaction.Transactional;
@@ -13,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 @AllArgsConstructor
@@ -24,6 +30,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
     private final TransactionServiceUtil transactionServiceUtil;
+    private final UserRepository userRepository;
 
     /**
      * Save a transaction based on the provided TransactionDTO.
@@ -131,6 +138,26 @@ public class TransactionService {
     public TransactionDTO requestFunds(TransactionDTO transactionDTO) {
         log.debug("Requesting funds from user with nameTag: {} to user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
 
+        var recipient = userRepository.findByNameTag(transactionDTO.getUserNameTag())
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + transactionDTO.getUserNameTag()));
+
+        if (transactionDTO.getSenderId().equals(recipient.getId())) {
+            throw new BadRequestException("Sender and recipient cannot be the same user");
+        }
+
+        transactionDTO.setRecipientId(recipient.getId());
+        transactionDTO.setTransactionType(TransactionType.TRANSFER);
+        transactionDTO.setTransactionStatus(TransactionStatus.PENDING);
+        transactionDTO.setIsExpense(false);
+
+        if (transactionDTO.getCurrency() == null) {
+            transactionDTO.setCurrency(Currency.USD);
+        }
+
+        if (transactionDTO.getAmount() == null || transactionDTO.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Invalid amount for fund request");
+        }
+
         return saveTransaction(transactionDTO);
     }
 
@@ -154,12 +181,16 @@ public class TransactionService {
      *
      * @param userId      the ID of the first user
      * @param otherUserId the ID of the second user
-     * @return a list of TransactionDTO objects representing the transactions between the two users
+     * @return a Page of TransactionSummaryDTO objects representing the transactions between the two users
      */
-    public Page<TransactionDTO> getAllTransactionBetweenTwoUsers(Pageable pageable, Long userId, Long otherUserId) {
-        return transactionRepository
-                .findByUserIdAndOtherUserId(userId, otherUserId, pageable)
-                .map(transactionMapper::toDTO);
-    }
+    public Page<TransactionSummaryDTO> getAllTransactionBetweenTwoUsers(Pageable pageable, Long userId, Long otherUserId) {
+        var transactions = transactionRepository.findByUserIdAndOtherUserId(userId, otherUserId, pageable);
+        var isFriend = userService.isFriend(userId, otherUserId);
 
+        return transactions.map(transaction -> {
+            var dto = transactionMapper.toTransactionSummaryDTO(transaction);
+            dto.setIsFriend(isFriend);
+            return dto;
+        });
+    }
 }

@@ -103,7 +103,7 @@ export default function SignIn() {
     const [selectedAuthMethod, setSelectedAuthMethod] = useState('googleAuth');
     const [openEmailVerification, setOpenEmailVerification] = useState(false);
     const [emailVerificationCode, setEmailVerificationCode] = useState('');
-
+    const [showTwoFactorOptions, setShowTwoFactorOptions] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -255,6 +255,17 @@ export default function SignIn() {
         }
     };
 
+    const handleUsernameBlur = async () => {
+        if (username) {
+            try {
+                const response = await axiosInstance.get(`/api/user/${username}/2fa`);
+                setShowTwoFactorOptions(response.data);
+            } catch (error) {
+                console.error('Error checking two-factor authentication status:', error);
+            }
+        }
+    };
+
     return (
         <ThemeProvider theme={defaultTheme}>
             <Container component="main" maxWidth="xs"
@@ -319,6 +330,7 @@ export default function SignIn() {
                                 autoFocus
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                                onBlur={handleUsernameBlur}
                                 error={!!usernameError}
                                 helperText={usernameError}
                             />
@@ -347,6 +359,7 @@ export default function SignIn() {
                                 }
                                 label="Remember me"
                             />
+                            {showTwoFactorOptions && (
                             <RadioGroup
                                 row
                                 value={selectedAuthMethod}
@@ -363,6 +376,7 @@ export default function SignIn() {
                                     label="Email Verification Code"
                                 />
                             </RadioGroup>
+                            )}
                             <Button
                                 type="submit"
                                 fullWidth

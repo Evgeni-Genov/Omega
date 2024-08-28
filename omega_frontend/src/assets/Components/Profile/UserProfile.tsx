@@ -36,6 +36,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css'; // Importing the default styles
 import './UserProfile.css';
 import TwoFactorAuthentication from "../Login/TwoFactorAuthentication.tsx";
+import {useAvatar} from "../Util/AvatarUtil.tsx";
 
 const CustomButton = styled(Button)(({theme}) => ({
     backgroundColor: '#663399',
@@ -119,6 +120,7 @@ const UserProfile = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [editField, setEditField] = useState(null);
     const formRef = useRef(null);
+    const {data: avatarUrl, isLoading: avatarLoading, error: avatarError} = useAvatar(userId);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -396,8 +398,6 @@ const UserProfile = () => {
             setEditField(null);
         }
     };
-
-    const avatarUrl = userData.avatar ? `http://localhost:8080/api/avatar/user/${userId}` : null;
 
     return (
         <Container maxWidth="md" className="user-profile" sx={{paddingTop: '20px'}}>

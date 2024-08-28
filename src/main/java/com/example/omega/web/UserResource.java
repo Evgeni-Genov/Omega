@@ -3,6 +3,7 @@ package com.example.omega.web;
 import com.example.omega.service.MailService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.Views;
+import com.example.omega.service.dto.FriendDTO;
 import com.example.omega.service.dto.UserDTO;
 import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.PaginationUtil;
@@ -26,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 
 import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
@@ -140,6 +142,7 @@ public class UserResource {
         userService.passwordReset(passwordResetLink.getUser(), userDTO);
     }
 
+    //TODO: Void?
     @PostMapping("/update-2fa")
     public ResponseEntity<?> updateTwoFactorAuthentication(@RequestBody UserDTO userDTO) {
         log.debug("User: {} is trying to update two-factor authentication.", userDTO.getEmail());
@@ -155,6 +158,7 @@ public class UserResource {
         return ResponseEntity.ok().body(updatedUser);
     }
 
+    //TODO:
     @GetMapping("/avatar/user/{userId}")
     public ResponseEntity<byte[]> getAvatarByUserId(@PathVariable Long userId) {
         log.debug("REST request to access avatar for user ID: {}", userId);
@@ -176,6 +180,28 @@ public class UserResource {
         }
     }
 
+    //TODO:
+    @GetMapping("/avatar/user/nameTag/{nameTag}")
+    public ResponseEntity<byte[]> getAvatarByUserNameTag(@PathVariable String nameTag) {
+        log.debug("REST request to access avatar for user nameTag: {}", nameTag);
+        try {
+            var user = userService.getUserByNameTag(nameTag);
+            var filename = user.getAvatar();
+            var fileContent = userService.getAvatarContent(filename);
+            var contentType = Files.probeContentType(Paths.get(USER_PROFILE_DIR).resolve(filename));
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .body(fileContent);
+        } catch (Exception e) {
+            throw new BadRequestException("Error retrieving avatar for user nameTag: " + nameTag);
+        }
+    }
+
     @PutMapping("/update/number")
     @JsonView(Views.UpdatePhoneNumberView.class)
     public ResponseEntity<UserDTO> updatePhoneNumber(Principal principal,
@@ -193,6 +219,37 @@ public class UserResource {
             throw new BadRequestException("Email is missing!");
         }
         return ResponseEntity.ok(email);
+    }
+
+    @PostMapping("/users/{userId}/friends/{friendNameTag}")
+    public ResponseEntity<Void> addFriend(@PathVariable Long userId, @PathVariable String friendNameTag, Principal principal) {
+        log.debug("User: {} is trying to add a friend with nameTag: {}", principal.getName(), friendNameTag);
+        securityUtils.canCurrentUserAccessThisData(principal, userId);
+        userService.addFriend(userId, friendNameTag);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/users/{userId}/friends/{friendNameTag}")
+    public ResponseEntity<Void> removeFriend(@PathVariable Long userId, @PathVariable String friendNameTag, Principal principal) {
+        log.debug("User: {} is trying to remove a friend with nameTag: {}", principal.getName(), friendNameTag);
+        securityUtils.canCurrentUserAccessThisData(principal, userId);
+        userService.removeFriend(userId, friendNameTag);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/users/{userId}/friends/{friendNameTag}")
+    public ResponseEntity<Set<FriendDTO>> searchFriend(@PathVariable Long userId, @PathVariable String friendNameTag, Principal principal) {
+        log.debug("User: {} is trying to search friend with nameTag: {}", principal.getName(), friendNameTag);
+        securityUtils.canCurrentUserAccessThisData(principal, userId);
+        var friends = userService.searchFriendByNameTag(userId, friendNameTag);
+        return ResponseEntity.ok().body(friends);
+    }
+
+    @GetMapping("/user/{username}/2fa")
+    public ResponseEntity<Boolean> isTwoFactorAuthenticationOn(@PathVariable String username) {
+        log.debug("REST Request to check if two factor authentication is on for user: {}", username);
+        var isTwoFactorAuthenticationEnabled = userService.isTwoFactorAuthenticationEnabled(username);
+        return ResponseEntity.ok().body(isTwoFactorAuthenticationEnabled);
     }
 
     //    @PutMapping("/update/username")

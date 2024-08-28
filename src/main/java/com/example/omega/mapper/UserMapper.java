@@ -2,6 +2,7 @@ package com.example.omega.mapper;
 
 import com.example.omega.config.security.payload.request.SignupRequest;
 import com.example.omega.domain.User;
+import com.example.omega.service.dto.FriendDTO;
 import com.example.omega.service.dto.UserDTO;
 import org.mapstruct.*;
 
@@ -16,5 +17,10 @@ public interface UserMapper {
     User toUserAuth(SignupRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "friendsList", ignore = true)
     void updateUserFromDto(UserDTO userDTO, @MappingTarget User user);
+
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "nameTag", source = "nameTag")
+    FriendDTO toFriendDTO(User user);
 }

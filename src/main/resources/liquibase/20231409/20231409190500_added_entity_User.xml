@@ -103,4 +103,39 @@
                                  onDelete="CASCADE"/>
     </changeSet>
 
+    <!-- Add the ManyToMany Relationships -->
+
+    <changeSet id="create-user-friends-list-table" author="egenov">
+        <createTable tableName="user_friends_list">
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="friend_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-primary-key" author="egenov">
+        <addPrimaryKey tableName="user_friends_list" columnNames="user_id, friend_id"/>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-foreign-key-user" author="egenov">
+        <addForeignKeyConstraint baseTableName="user_friends_list"
+                                 constraintName="fk_user_friends_list_user_id"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="user_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-foreign-key-friend" author="egenov">
+        <addForeignKeyConstraint baseTableName="user_friends_list"
+                                 constraintName="fk_user_friends_list_friend_id"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="friend_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
 </databaseChangeLog>

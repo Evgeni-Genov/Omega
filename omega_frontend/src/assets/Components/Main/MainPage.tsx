@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     Alert,
     Autocomplete,
@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import axiosInstance from "../Config/AxiosConfiguration.ts";
 import {debounce} from 'lodash';
-import {format, parseISO} from 'date-fns';
+import {format, isSameYear, isToday, isValid, parseISO} from 'date-fns';
 import SendIcon from '@mui/icons-material/Send';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddCardIcon from '@mui/icons-material/AddCard';
@@ -33,11 +33,13 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from 'react-router-dom';
-import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
+import {createTheme, lighten, styled, ThemeProvider} from '@mui/material/styles';
 import InfoIcon from "@mui/icons-material/Info";
 import DescriptionIcon from '@mui/icons-material/Description';
 import {ArcElement, Chart as ChartJS, Legend, Tooltip} from 'chart.js';
 import {Doughnut} from 'react-chartjs-2';
+import {motion} from 'framer-motion';
+import {useAvatar} from "../Util/AvatarUtil.tsx";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -66,6 +68,7 @@ const TransactionCard = styled(Card)(({theme}) => ({
     padding: theme.spacing(2),
     marginBottom: theme.spacing(1),
 }));
+
 
 const PositiveAmount = styled(Typography)(({theme}) => ({
     color: 'green',
@@ -153,25 +156,33 @@ interface AccountBalance {
 
 const formatDate = (dateString: string) => {
     try {
-        if (!isNaN(parseFloat(dateString))) {
-            const date = new Date(parseFloat(dateString) * 1000);
-            return format(date, 'yyyy-MM-dd HH:mm:ss');
+        const date = parseISO(dateString);
+        if (!isValid(date)) {
+            throw new Error('Invalid date');
         }
-        return format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss');
+        return format(date, 'yyyy-MM-dd HH:mm:ss');
     } catch (error) {
+        console.error('Error formatting date:', error);
         return 'Invalid Date';
     }
 };
 
-const formatDateWithoutTime = (dateString: Array<number>) => {
+const formatDateWithoutTime = (dateInput: string | Array<number>) => {
     try {
-        if (dateString.length === 3) {
-            const [year, month, day] = dateString;
-            const date = new Date(year, month - 1, day);
-            return format(date, 'yyyy-MM-dd');
+        let date: Date;
+        if (Array.isArray(dateInput) && dateInput.length === 3) {
+            const [year, month, day] = dateInput;
+            date = new Date(year, month - 1, day);
+        } else if (typeof dateInput === 'string') {
+            date = parseISO(dateInput);
         } else {
-            throw new Error('Invalid date array format');
+            throw new Error('Invalid date input');
         }
+
+        if (!isValid(date)) {
+            throw new Error('Invalid date');
+        }
+        return format(date, 'yyyy-MM-dd');
     } catch (error) {
         console.error('Error formatting date:', error);
         return 'Invalid Date';
@@ -189,6 +200,7 @@ const MainPage = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [addFundsSuccessMessage, setAddFundsSuccessMessage] = useState(false);
     const [sendFundsSuccessMessage, setSendFundsSuccessMessage] = useState(false);
+    const [requestFundsSuccessMessage, setRequestFundsSuccessMessage] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const navigate = useNavigate();
     const [errorColor, setErrorColor] = useState('error');
@@ -199,11 +211,29 @@ const MainPage = () => {
     const [budgets, setBudgets] = useState([]);
     const [remainingBudget, setRemainingBudget] = useState<number | null>(null);
     const [totalSpent, setTotalSpent] = useState<number>(0);
-    const [avatarUrl, setAvatarUrl] = useState('');
     const [searchUser, setSearchUser] = useState('');
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [transactionSnapshots, setTransactionSnapshots] = useState<any[]>([]);
     const [openReport, setOpenReport] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [transactionHistory, setTransactionHistory] = useState([]);
+    const [openRequestFunds, setOpenRequestFunds] = useState(false);
+    const [mainSearchUser, setMainSearchUser] = useState('');
+    const [mainSearchSuggestions, setMainSearchSuggestions] = useState([]);
+    const [sendFundsSearchUser, setSendFundsSearchUser] = useState('');
+    const [sendFundsSuggestions, setSendFundsSuggestions] = useState([]);
+    const [openRemoveFriendDialog, setOpenRemoveFriendDialog] = useState(false);
+    const [pendingFundRequests, setPendingFundRequests] = useState([]);
+    const userId = localStorage.getItem('USER_ID');
+    const {data: avatarUrl, isLoading: avatarLoading, error: avatarError} = useAvatar(userId);
+    const [isFriend, setIsFriend] = useState(false);
+    const chatEndRef = useRef(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [requestFundsDetails, setRequestFundsDetails] = useState({
+        amount: '',
+        currency: 'USD',
+        description: '',
+    });
     const [reportDates, setReportDates] = useState({
         startDate: '',
         endDate: ''
@@ -260,6 +290,18 @@ const MainPage = () => {
     }, [navigate]);
 
     useEffect(() => {
+        if (selectedUser) {
+            setIsFriend(selectedUser.isFriend);
+        }
+    }, [selectedUser]);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({behavior: "smooth"});
+        }
+    }, [transactionHistory]);
+
+    useEffect(() => {
         const fetchBudget = async () => {
             try {
                 const token = localStorage.getItem('TOKEN');
@@ -285,44 +327,97 @@ const MainPage = () => {
         }
     }, [viewBudget]);
 
-    useEffect(() => {
-        const fetchAvatar = async () => {
-            try {
-                const token = localStorage.getItem('TOKEN');
-                const userId = localStorage.getItem('USER_ID');
-                const response = await axiosInstance.get(`/api/avatar/user/${userId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    responseType: 'blob',
-                });
+    const fetchTransactionHistory = useCallback(async (nameTag) => {
+        if (!nameTag) return;
 
-                const imageUrl = URL.createObjectURL(response.data);
-                setAvatarUrl(imageUrl);
-            } catch (error) {
-                console.error('Failed to fetch avatar:', error);
-            }
-        };
-
-        fetchAvatar();
-    }, []);
-
-    const fetchSuggestions = debounce(async (query: string) => {
-        setSearchLoading(true);
         try {
             const token = localStorage.getItem('TOKEN');
-            const response = await axiosInstance.get(`/api/search-user/${query}`, {
+            const currentUserId = localStorage.getItem('USER_ID');
+            const response = await axiosInstance.get(`/api/transactions`, {
+                params: {
+                    userId: currentUserId,
+                    otherUserNameTag: nameTag
+                },
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            setSuggestions(response.data.map((user: { nameTag: string }) => user.nameTag));
+            setTransactionHistory(response.data);
+
+            if (response.data.length > 0) {
+                setIsFriend(response.data[0].isFriend);
+            } else {
+                setIsFriend(false);
+            }
         } catch (error) {
-            console.error('Failed to fetch user suggestions:', error);
-        } finally {
-            setSearchLoading(false);
+            console.error('Failed to fetch transaction history:', error);
         }
-    }, 300);
+    }, []);
+
+    useEffect(() => {
+        if (selectedUser && selectedUser.nameTag) {
+            fetchTransactionHistory(selectedUser.nameTag);
+        }
+    }, [selectedUser, fetchTransactionHistory]);
+
+    const fetchMainSuggestions = useCallback(
+        debounce(async (query: string) => {
+            setSearchLoading(true);
+            try {
+                const token = localStorage.getItem('TOKEN');
+                const response = await axiosInstance.get(`/api/search-user/${query}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setMainSearchSuggestions(response.data);
+            } catch (error) {
+                console.error('Failed to fetch user suggestions:', error);
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 300),
+        []
+    );
+
+    useEffect(() => {
+        if (selectedUser) {
+            setIsFriend(selectedUser.isFriend);
+        }
+    }, [selectedUser]);
+
+    useEffect(() => {
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({behavior: "smooth"});
+        }
+    }, [transactionHistory]);
+
+    useEffect(() => {
+        if (selectedUser) {
+            setIsFriend(selectedUser.isFriend);
+        }
+    }, [selectedUser]);
+
+    const fetchSendFundsSuggestions = useCallback(
+        debounce(async (query: string) => {
+            setSearchLoading(true);
+            try {
+                const token = localStorage.getItem('TOKEN');
+                const userId = localStorage.getItem('USER_ID');
+                const response = await axiosInstance.get(`/api/users/${userId}/friends/${query}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                setSendFundsSuggestions(response.data);
+            } catch (error) {
+                console.error('Failed to fetch user suggestions:', error);
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 300),
+        []
+    );
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
@@ -333,7 +428,7 @@ const MainPage = () => {
 
         if (name === 'userNameTag') {
             if (value.length > 2) {
-                fetchSuggestions(value);
+                fetchSendFundsSuggestions(value);
             } else {
                 setSuggestions([]);
             }
@@ -403,7 +498,7 @@ const MainPage = () => {
         setErrorMessage('');
     };
 
-    const handleSendFunds = async () => {
+    const handleSendFunds = async (transactionDetails) => {
         try {
             const token = localStorage.getItem('TOKEN');
             const userId = parseInt(localStorage.getItem('USER_ID') || '', 10);
@@ -435,8 +530,12 @@ const MainPage = () => {
                 ...prevTransactions
             ]);
 
-            handleClose();
-            setSendFundsSuccessMessage(true); // Show success message for sending funds
+            setSendFundsSuccessMessage(true);
+
+            // Remove the sent request from the pending fund requests list if it exists
+            if (transactionDetails.requestId) {
+                setPendingFundRequests(prevRequests => prevRequests.filter(req => req.id !== transactionDetails.requestId));
+            }
         } catch (error) {
             console.error('Failed to send funds:', error);
             if (error.response && error.response.status === 400) {
@@ -446,6 +545,22 @@ const MainPage = () => {
                 setErrorMessage('Internal Server Error. Please try again later.');
             }
         }
+    };
+
+    const handleSendFundsDialog = async () => {
+        await handleSendFunds(transactionDetails);
+        handleClose();
+    };
+
+    const handleSendFundsRequest = async (request) => {
+        const transactionDetails = {
+            userNameTag: request.senderNameTag,
+            amount: request.amount.toString(),
+            description: '',
+            currency: request.currency,
+            requestId: request.id,
+        };
+        await handleSendFunds(transactionDetails);
     };
 
     const handleAddFundsSubmit = async () => {
@@ -502,7 +617,7 @@ const MainPage = () => {
         }
     };
 
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: number, p0: { style: string; currency: any; currencyDisplay: string; }) => {
         return amount.toLocaleString('en-US', {
             style: 'currency',
             currency: 'USD',
@@ -510,6 +625,14 @@ const MainPage = () => {
             maximumFractionDigits: 2,
         });
     };
+
+    const optimizedHandleClick = useCallback((action) => {
+        setIsLoading(true);
+        setTimeout(() => {
+            action();
+            setIsLoading(false);
+        }, 300);
+    }, []);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -529,6 +652,7 @@ const MainPage = () => {
     const handleSnackbarClose = () => {
         setAddFundsSuccessMessage(false);
         setSendFundsSuccessMessage(false);
+        setRequestFundsSuccessMessage(false);
     };
 
     const renderCardIcon = (cardNumber: string) => {
@@ -643,6 +767,7 @@ const MainPage = () => {
         }
     };
 
+
     const handleViewBudget = () => {
         setViewBudget(true);
         fetchRemainingBudget();
@@ -676,6 +801,7 @@ const MainPage = () => {
             console.error('Failed to fetch transaction snapshots:', error);
         }
     };
+
 
     const handleReportDatesChange = (e) => {
         const {name, value} = e.target;
@@ -746,32 +872,182 @@ const MainPage = () => {
         }
     };
 
+
+    const handleRequestFunds = async () => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = localStorage.getItem('USER_ID');
+            const response = await axiosInstance.post('/api/transaction/request-funds', {
+                ...requestFundsDetails,
+                senderId: userId,
+                recipientId: selectedUser.id,
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            console.log('Request funds successful:', response.data);
+            setOpenRequestFunds(false);
+            setSelectedUser(null);
+            setRequestFundsSuccessMessage(true);
+        } catch (error) {
+            console.error('Failed to request funds:', error);
+        }
+    };
+
+    const handleRequestFundsInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const {name, value} = e.target;
+        setRequestFundsDetails(prevState => ({
+            ...prevState,
+            [name]: value,
+        }));
+    };
+
+
+    const formatTransactionDateHistory = (dateString: string): string => {
+        try {
+            const date = parseISO(dateString);
+
+            if (isToday(date)) {
+                return format(date, 'HH:mm');
+            } else if (isSameYear(date, new Date())) {
+                return format(date, 'dd.MM');
+            } else {
+                return format(date, 'dd.MM.yyyy');
+            }
+        } catch (error) {
+            console.error('Error formatting transaction date:', error);
+            return 'Invalid Date';
+        }
+    };
+
+    const handleAddFriend = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = localStorage.getItem('USER_ID');
+            await axiosInstance.post(`/api/users/${userId}/friends/${selectedUser.nameTag}`, null, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setIsFriend(true);
+            setSelectedUser(prevUser => ({...prevUser, isFriend: true}));
+        } catch (error) {
+            console.error('Failed to add friend:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRemoveFriend = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('TOKEN');
+            const userId = localStorage.getItem('USER_ID');
+            await axiosInstance.delete(`/api/users/${userId}/friends/${selectedUser.nameTag}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setIsFriend(false);
+            setSelectedUser(prevUser => ({...prevUser, isFriend: false}));
+            setOpenRemoveFriendDialog(false);
+        } catch (error) {
+            console.error('Failed to remove friend:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancelRequest = async (requestId) => {
+        try {
+            const token = localStorage.getItem('TOKEN');
+            await axiosInstance.patch(`/api/transactions/${requestId}/cancel`, null, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            // Remove the cancelled request from the pending fund requests list
+            setPendingFundRequests(prevRequests => prevRequests.filter(request => request.id !== requestId));
+        } catch (error) {
+            console.error('Failed to cancel fund request:', error);
+        }
+    };
+
+    const handleMainSearchSuggestionClick = (user) => {
+        setSelectedUser(user);
+        setIsFriend(false);
+    };
+
+
     return (
         <ThemeProvider theme={theme}>
             <Container component="main" maxWidth="md"
                        sx={{backgroundColor: 'white', borderRadius: 2, boxShadow: 3, padding: 3, mt: 8}}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                    <Box display="flex" alignItems="center">
+                    <Box display="flex" alignItems="center" width="70%"> {/* Increased width for more space */}
                         {avatarUrl && (
                             <Avatar src={avatarUrl} alt="User Avatar" sx={{width: 56, height: 56, marginRight: 2}}/>
                         )}
-                        <CustomTextField
-                            margin="dense"
-                            name="searchUser"
-                            label="Search User"
-                            type="text"
-                            value={searchUser}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchUser(value);
+                        <Autocomplete
+                            freeSolo
+                            options={mainSearchSuggestions}
+                            getOptionLabel={(option) => option.nameTag || ''}
+                            renderOption={(props, option) => {
+                                const {key, ...otherProps} = props;
+                                return (
+                                    <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}}
+                                         key={key} {...otherProps}>
+                                        <Avatar
+                                            src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
+                                            alt={option.nameTag}
+                                            sx={{width: 32, height: 32, marginRight: 2}}
+                                        />
+                                        {option.nameTag}
+                                    </Box>
+                                );
+                            }}
+                            renderInput={(params) => (
+                                <CustomTextField
+                                    {...params}
+                                    margin="dense"
+                                    label="Search User"
+                                    type="text"
+                                    fullWidth
+                                    value={mainSearchUser}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setMainSearchUser(value);
 
-                                if (value.length > 2) {
-                                    fetchSuggestions(value);
+                                        if (value.length > 2) {
+                                            fetchMainSuggestions(value);
+                                        } else {
+                                            setMainSearchSuggestions([]);
+                                        }
+                                    }}
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {searchLoading ? <CircularProgress color="inherit" size={20}/> : null}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        ),
+                                    }}
+                                />
+                            )}
+                            onChange={(event, newValue) => {
+                                if (newValue && typeof newValue === 'object' && newValue.nameTag) {
+                                    handleMainSearchSuggestionClick(newValue);
                                 } else {
-                                    setSuggestions([]);
+                                    setSelectedUser(null);
                                 }
                             }}
-                            sx={{marginRight: 2}}
+                            onInputChange={(event, newInputValue) => {
+                                setMainSearchUser(newInputValue);
+                            }}
+                            sx={{width: '50%'}}
                         />
                     </Box>
                     <IconButton onClick={handleMenuClick} sx={{color: '#663399'}}>
@@ -903,19 +1179,36 @@ const MainPage = () => {
                         )}
                         <Autocomplete
                             freeSolo
-                            options={suggestions}
-                            onInputChange={(event, newInputValue) => {
-                                handleInputChange({target: {name: 'userNameTag', value: newInputValue}});
-                            }}
+                            options={sendFundsSuggestions}
+                            getOptionLabel={(option) => option.nameTag}
+                            renderOption={(props, option) => (
+                                <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}} {...props}>
+                                    <Avatar
+                                        src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
+                                        alt={option.nameTag}
+                                        sx={{width: 32, height: 32, marginRight: 2}}
+                                    />
+                                    {option.nameTag}
+                                </Box>
+                            )}
                             renderInput={(params) => (
                                 <CustomTextField
                                     {...params}
                                     margin="dense"
-                                    label="Recipient Name Tag"
+                                    label="Search User"
                                     type="text"
                                     fullWidth
-                                    value={transactionDetails.userNameTag}
-                                    onChange={handleInputChange}
+                                    value={sendFundsSearchUser}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setSendFundsSearchUser(value);
+
+                                        if (value.length > 2) {
+                                            fetchSendFundsSuggestions(value);
+                                        } else {
+                                            setSendFundsSuggestions([]);
+                                        }
+                                    }}
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
@@ -927,6 +1220,14 @@ const MainPage = () => {
                                     }}
                                 />
                             )}
+                            onChange={(event, newValue) => {
+                                if (newValue) {
+                                    setTransactionDetails(prevDetails => ({
+                                        ...prevDetails,
+                                        userNameTag: newValue.nameTag
+                                    }));
+                                }
+                            }}
                         />
                         <CustomTextField
                             margin="dense"
@@ -966,11 +1267,337 @@ const MainPage = () => {
                         <Button onClick={handleClose} color="secondary">
                             Cancel
                         </Button>
-                        <PurpleButton onClick={handleSendFunds} variant="contained">
+                        <PurpleButton onClick={handleSendFundsDialog} variant="contained">
                             Send
                         </PurpleButton>
                     </DialogActions>
                 </Dialog>
+                <Dialog open={selectedUser !== null} onClose={() => setSelectedUser(null)} maxWidth="md" fullWidth>
+                    <DialogTitle
+                        style={{background: 'rebeccapurple', color: 'white', textAlign: 'center', padding: '16px'}}>
+                        <DialogTitle
+                            style={{background: 'rebeccapurple', color: 'white', textAlign: 'center', padding: '16px'}}>
+                            <Box display="flex" alignItems="center" justifyContent="center">
+                                <Avatar
+                                    src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${selectedUser?.nameTag}`}
+                                    alt={selectedUser?.nameTag}
+                                    sx={{width: 64, height: 64, marginRight: 2}}
+                                />
+                                <Typography variant="h5"
+                                            style={{fontWeight: 'bold'}}>{selectedUser?.nameTag}</Typography>
+                            </Box>
+                        </DialogTitle>
+                    </DialogTitle>
+                    <DialogContent style={{height: '500px', overflowY: 'auto', background: '#f0f0f0', padding: '16px'}}>
+                        <Box display="flex" flexDirection="column" alignItems="stretch" height="100%">
+                            {transactionHistory.map((transaction, index) => {
+                                const formattedDate = formatTransactionDateHistory(transaction.createdDate);
+                                const currentUserId = parseInt(localStorage.getItem('USER_ID') || '0');
+                                const isSent = transaction.senderId === currentUserId;
+
+                                return (
+                                    <motion.div
+                                        key={index}
+                                        initial={{opacity: 0, y: 10}}
+                                        animate={{opacity: 1, y: 0}}
+                                        transition={{duration: 0.2, delay: index * 0.05}}
+                                    >
+                                        <Box
+                                            mb={1}
+                                            p={1.5}
+                                            borderRadius={12}
+                                            maxWidth="30%" // Increased from 15% to allow for more content
+                                            minWidth="15%" // Set a minimum width
+                                            alignSelf={isSent ? 'flex-end' : 'flex-start'}
+                                            style={{
+                                                background: isSent ? 'rebeccapurple' : '#fff',
+                                                color: isSent ? '#fff' : '#000',
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                                position: 'relative',
+                                                marginLeft: isSent ? 'auto' : '0',
+                                                marginRight: isSent ? '0' : 'auto',
+                                                textAlign: 'center',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                            }}
+                                        >
+                                            <Typography variant="caption"
+                                                        style={{fontWeight: 'bold', fontSize: '0.7rem'}}>
+                                                {isSent ? 'Sent' : 'Received'}
+                                            </Typography>
+                                            <Typography variant="body2" style={{
+                                                fontWeight: 'bold',
+                                                fontSize: '0.9rem',
+                                                wordBreak: 'break-word'
+                                            }}>
+                                                {formatCurrency(transaction.amount, {
+                                                    style: 'currency',
+                                                    currency: transaction.currency,
+                                                    currencyDisplay: 'symbol',
+                                                })}
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                style={{
+                                                    fontSize: '0.75rem',
+                                                    padding: '4px 0',
+                                                    wordBreak: 'break-word',
+                                                }}
+                                            >
+                                                {transaction.description}
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                style={{
+                                                    opacity: 0.7,
+                                                    fontSize: '0.7rem',
+                                                    alignSelf: 'flex-end',
+                                                    marginTop: '4px',
+                                                }}
+                                            >
+                                                {formattedDate}
+                                            </Typography>
+                                            <div ref={chatEndRef}/>
+                                        </Box>
+                                    </motion.div>
+                                );
+                            })}
+                        </Box>
+                    </DialogContent>
+                    <DialogActions style={{background: 'white', justifyContent: 'center', padding: '16px'}}>
+                        <Button onClick={() => optimizedHandleClick(() => setSelectedUser(null))} variant="contained"
+                                disabled={isLoading}>
+                            Close
+                        </Button>
+                        <Button onClick={() => optimizedHandleClick(() => {
+                            setTransactionDetails(prevDetails => ({
+                                ...prevDetails,
+                                userNameTag: selectedUser.nameTag
+                            }));
+                            setOpen(true);
+                        })} variant="contained" disabled={isLoading}>
+                            Send Funds
+                        </Button>
+                        <Button onClick={() => optimizedHandleClick(() => {
+                            setRequestFundsDetails(prevDetails => ({
+                                ...prevDetails,
+                                userNameTag: selectedUser.nameTag
+                            }));
+                            setOpenRequestFunds(true);
+                        })} variant="contained" disabled={isLoading}>
+                            Request Funds
+                        </Button>
+                        {selectedUser && (
+                            <>
+                                {isFriend ? (
+                                    <Button
+                                        onClick={() => setOpenRemoveFriendDialog(true)}
+                                        variant="contained"
+                                        style={{
+                                            background: 'red',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                    >
+                                        Remove Friend
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleAddFriend}
+                                        variant="contained"
+                                        style={{
+                                            background: 'green',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                    >
+                                        Add Friend
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </DialogActions>
+                </Dialog>
+                <Dialog
+                    open={openRemoveFriendDialog}
+                    onClose={() => setOpenRemoveFriendDialog(false)}
+                >
+                    <DialogTitle>Remove Friend</DialogTitle>
+                    <DialogContent>
+                        <Typography>
+                            Are you sure you want to remove {selectedUser?.nameTag} from your friend list?
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenRemoveFriendDialog(false)} color="secondary">
+                            No
+                        </Button>
+                        <Button onClick={handleRemoveFriend} style={{background: 'red', color: 'white'}}>
+                            Yes
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={openRequestFunds} onClose={() => setOpenRequestFunds(false)}>
+                    <DialogTitle>Request Funds from {selectedUser?.nameTag}</DialogTitle>
+                    <DialogContent>
+                        <CustomTextField
+                            margin="dense"
+                            name="userNameTag"
+                            label="User"
+                            type="text"
+                            fullWidth
+                            value={selectedUser?.nameTag || ''}
+                            disabled
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={requestFundsDetails.amount}
+                            onChange={handleRequestFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="description"
+                            label="Description"
+                            type="text"
+                            fullWidth
+                            value={requestFundsDetails.description}
+                            onChange={handleRequestFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="currency"
+                            label="Currency"
+                            select
+                            fullWidth
+                            value={requestFundsDetails.currency}
+                            onChange={handleRequestFundsInputChange}
+                        >
+                            <MenuItem value="USD">USD</MenuItem>
+                            <MenuItem value="BGN">BGN</MenuItem>
+                            <MenuItem value="EUR">EUR</MenuItem>
+                            <MenuItem value="GBP">GBP</MenuItem>
+                            <MenuItem value="JPY">JPY</MenuItem>
+                        </CustomTextField>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenRequestFunds(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleRequestFunds} variant="contained">
+                            Request
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+                <DialogTitle>Request Funds from {selectedUser?.nameTag}</DialogTitle>
+                <DialogContent style={{
+                    height: '500px',
+                    overflowY: 'auto',
+                    background: 'linear-gradient(45deg, #f5f5f5, #e0e0e0)'
+                }}>
+                    <Box display="flex" flexDirection="column" alignItems="stretch" height="100%">
+                        {transactionHistory.map((transaction, index) => {
+                            const formattedDate = formatTransactionDateHistory(transaction.createdDate);
+                            const currentUserId = parseInt(localStorage.getItem('USER_ID') || '0');
+                            const isSent = transaction.senderId === currentUserId;
+                            const transactionStatus = isSent ? 'Sent' : 'Received';
+                            const bubbleColor = isSent ? '#8A2BE2' : '#4B0082'; // Variations of purple
+
+                            return (
+                                <motion.div
+                                    key={index}
+                                    initial={{opacity: 0, y: 20}}
+                                    animate={{opacity: 1, y: 0}}
+                                    transition={{duration: 0.3, delay: index * 0.1}}
+                                >
+                                    <Box
+                                        mb={2}
+                                        p={2}
+                                        borderRadius={16}
+                                        boxShadow={3}
+                                        alignSelf={isSent ? 'flex-end' : 'flex-start'}
+                                        style={{
+                                            background: `linear-gradient(135deg, ${bubbleColor}, ${lighten(bubbleColor, 0.2)})`,
+                                            maxWidth: '70%',
+                                            position: 'relative',
+                                            color: 'white',
+                                            marginLeft: isSent ? '30%' : '0',
+                                            marginRight: isSent ? '0' : '30%',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <Box
+                                            position="absolute"
+                                            top={-15}
+                                            left={-15}
+                                            width={30}
+                                            height={30}
+                                            borderRadius="50%"
+                                            style={{
+                                                background: lighten(bubbleColor, 0.3),
+                                                opacity: 0.6,
+                                            }}
+                                        />
+                                        <Box display="flex" flexDirection="column" alignItems="center" zIndex={1}
+                                             position="relative">
+                                            <Typography variant="body2" style={{
+                                                fontWeight: 'bold',
+                                                marginBottom: '4px',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '1px'
+                                            }}>
+                                                {transactionStatus}
+                                            </Typography>
+                                            <Typography variant="h5" style={{
+                                                fontWeight: 'bold',
+                                                textAlign: 'center',
+                                                marginBottom: '8px',
+                                                textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+                                            }}>
+                                                {formatCurrency(transaction.amount, {
+                                                    style: 'currency',
+                                                    currency: transaction.currency,
+                                                    currencyDisplay: 'symbol',
+                                                })}
+                                            </Typography>
+                                            <Typography variant="body1"
+                                                        style={{marginTop: '4px', textAlign: 'center', opacity: 0.9}}>
+                                                {transaction.description}
+                                            </Typography>
+                                        </Box>
+                                        <Box
+                                            position="absolute"
+                                            bottom={8}
+                                            right={8}
+                                            style={{
+                                                fontSize: '0.75rem',
+                                                opacity: 0.8,
+                                                fontWeight: 'bold',
+                                                background: 'rgba(255,255,255,0.2)',
+                                                padding: '2px 6px',
+                                                borderRadius: '10px',
+                                            }}
+                                        >
+                                            {formattedDate}
+                                        </Box>
+                                    </Box>
+                                </motion.div>
+                            );
+                        })}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenRequestFunds(false)} color="secondary">
+                        Cancel
+                    </Button>
+                    <PurpleButton onClick={handleRequestFunds} variant="contained">
+                        Request
+                    </PurpleButton>
+                </DialogActions>
                 <Dialog open={openAddFunds} onClose={handleAddFundsClose}>
                     <DialogTitle>Add Funds</DialogTitle>
                     <DialogContent>
@@ -1263,8 +1890,6 @@ const MainPage = () => {
                                 <Typography>Amount: {snapshot.state.amount}</Typography>
                                 <Typography>Currency: {snapshot.state.currency}</Typography>
                                 <Typography>Status: {snapshot.state.transactionStatus}</Typography>
-                                <Typography>Sender ID: {snapshot.state.sender.cdoId}</Typography>
-                                <Typography>Recipient ID: {snapshot.state.recipient.cdoId}</Typography>
                             </Box>
                         ))}
                     </DialogContent>
@@ -1274,6 +1899,26 @@ const MainPage = () => {
                         </Button>
                     </DialogActions>
                 </Dialog>
+                <Box mt={4}>
+                    <Typography variant="h6">Pending Fund Requests</Typography>
+                    {pendingFundRequests.map((request) => (
+                        <Box key={request.id} display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                            <Box>
+                                <Typography>From: {request.senderNameTag}</Typography>
+                                <Typography>Amount: {formatCurrency(request.amount)}</Typography>
+                            </Box>
+                            <Box>
+                                <Button onClick={() => handleCancelRequest(request.id)} color="secondary"
+                                        variant="outlined" style={{marginRight: '8px'}}>
+                                    Cancel
+                                </Button>
+                                <PurpleButton onClick={() => handleSendFundsRequest(request)} variant="contained">
+                                    Send Funds
+                                </PurpleButton>
+                            </Box>
+                        </Box>
+                    ))}
+                </Box>
                 <Snackbar
                     open={createBudgetSuccessMessage}
                     autoHideDuration={3000}
@@ -1302,6 +1947,16 @@ const MainPage = () => {
                 >
                     <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
                         Successfully sent funds!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={requestFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully requested funds!
                     </Alert>
                 </Snackbar>
             </Container>

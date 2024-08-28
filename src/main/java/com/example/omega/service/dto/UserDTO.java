@@ -65,7 +65,7 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String countryOfBirth;
 
-    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
+    @JsonView({Views.UpdateNonCredentialView.class, Views.SearchView.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
     @JsonDeserialize(using = StringNormalizationDeserializer.class)
     private String nameTag;
 
@@ -105,7 +105,7 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.TwoFactorSecretView.class})
     private String twoFactorAuthCode;
 
-    @JsonView({Views.PersonalView.class})
+    @JsonView({Views.PersonalView.class, Views.SearchView.class})
     private String avatar;
 
     @JsonView({Views.EmailVerificationCodeView.class})
@@ -127,12 +127,12 @@ public class UserDTO extends AbstractAuditingDTO {
     @JsonView({Views.AllUsersWithDetails.class})
     private Boolean isBudgetingEnabled;
 
-    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class, Views.PersonalView.class})
+    @JsonView({Views.AllUsersWithDetails.class, Views.PersonalView.class})
     private List<AccountBalance> accountBalances;
 
-    @JsonView({Views.AllUsersWithDetails.class,  Views.AllUsersWithDetails.class})
+    @JsonView({Views.AllUsersWithDetails.class})
     private List<Transaction> outgoingTransactions;
 
-    @JsonView({Views.AllUsersWithDetails.class, Views.AllUsersWithDetails.class})
+    @JsonView({Views.AllUsersWithDetails.class})
     private List<Transaction> incomingTransactions;
 }

@@ -2,8 +2,10 @@ package com.example.omega.web;
 
 import com.example.omega.domain.Transaction;
 import com.example.omega.service.TransactionService;
+import com.example.omega.service.UserService;
 import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
+import com.example.omega.service.dto.TransactionSummaryDTO;
 import com.example.omega.service.util.PaginationUtil;
 import com.example.omega.service.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +30,7 @@ public class TransactionResource {
 
     private final TransactionService transactionService;
     private final Javers javers;
+    private final UserService userService;
     private SecurityUtils securityUtils;
 
     @PostMapping("/transaction/send-funds")
@@ -37,14 +40,6 @@ public class TransactionResource {
         var createdTransactionDTO = transactionService.sendFunds(transactionDTO);
         return ResponseEntity.ok().body(createdTransactionDTO);
     }
-
-//    @PostMapping("/transaction/request-funds")
-//    @Operation(summary = "Request funds")
-//    public ResponseEntity<TransactionDTO> requestFunds(@RequestBody TransactionDTO transactionDTO) {
-//        log.debug("User is trying to request funds!");
-//        var createdTransactionDTO = transactionService.requestFunds(transactionDTO);
-//        return ResponseEntity.ok().body(createdTransactionDTO);
-//    }
 
     //TODO: basic Javers Snapshot
     @GetMapping("/stores/snapshots")
@@ -76,14 +71,27 @@ public class TransactionResource {
         return ResponseEntity.ok().body(createdCreditCardDTO);
     }
 
+    //TODO: should include flag isFriend
     @GetMapping("/transactions")
-    public ResponseEntity<List<TransactionDTO>> getAllTransactionsBetweenTwoUsers(Principal principal, Pageable pageable,
-            @RequestParam("userId") Long userId,
-            @RequestParam("otherUserId") Long otherUserId) {
+    public ResponseEntity<List<TransactionSummaryDTO>> getAllTransactionsBetweenTwoUsers(Principal principal, Pageable pageable,
+                                                                                         @RequestParam("userId") Long userId,
+                                                                                         @RequestParam("otherUserNameTag") String otherUserNameTag) {
         var user = securityUtils.extractCurrentUserIdFromPrincipal(principal);
         log.debug("User with ID: {} is trying to get all transactions between two users!", user);
+        var otherUserId = userService.getUserByNameTag(otherUserNameTag).getId();
         var transactionsPage = transactionService.getAllTransactionBetweenTwoUsers(pageable, userId, otherUserId);
         var headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), transactionsPage);
         return ResponseEntity.ok().headers(headers).body(transactionsPage.getContent());
+    }
+
+    @PostMapping("/transaction/request-funds")
+    @Operation(summary = "Request funds")
+    public ResponseEntity<TransactionDTO> requestFunds(@RequestBody TransactionDTO transactionDTO,
+                                                       Principal principal) {
+        var currentUserId = securityUtils.extractCurrentUserIdFromPrincipal(principal);
+        log.debug("User with ID: {} is trying to request funds!", currentUserId);
+        transactionDTO.setSenderId(currentUserId);
+        var createdTransactionDTO = transactionService.requestFunds(transactionDTO);
+        return ResponseEntity.ok().body(createdTransactionDTO);
     }
 }

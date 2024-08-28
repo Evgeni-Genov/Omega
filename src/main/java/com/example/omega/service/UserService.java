@@ -4,6 +4,7 @@ import com.example.omega.domain.User;
 import com.example.omega.domain.enumeration.Roles;
 import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
+import com.example.omega.service.dto.FriendDTO;
 import com.example.omega.service.dto.UserDTO;
 import com.example.omega.service.exception.BadRequestException;
 import com.example.omega.service.util.PasswordResetLinkService;
@@ -23,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
@@ -165,13 +168,6 @@ public class UserService {
         return userMapper.toDTO(updatedUser);
     }
 
-    /**
-     * Retrieves a list of users based on their nameTag.
-     *
-     * @param nameTag The nameTag to search for users.
-     * @return A list of UserDTO objects that contain the specified nameTag.
-     * @throws BadRequestException If no users with the given nameTag are found.
-     */
     public List<UserDTO> getUsersByNameTagContaining(String nameTag) {
         log.debug("Request to get users by nameTag containing: {}", nameTag);
         var users = userRepository.findByNameTagContainingIgnoreCase(nameTag);
@@ -180,7 +176,15 @@ public class UserService {
             throw new BadRequestException("Can't find users with nameTag containing: " + nameTag);
         }
 
-        return users.stream().map(userMapper::toDTO).toList();
+        return users.stream()
+                .map(user -> {
+                    var dto = userMapper.toDTO(user);
+                    if (user.getAvatar() == null) {
+                        dto.setAvatar("src/main/resources/userProfiles/shield.png");
+                    }
+                    return dto;
+                })
+                .toList();
     }
 
     /**
@@ -551,5 +555,52 @@ public class UserService {
      */
     public String findEmailByUsername(String username) {
         return userRepository.findEmailByUsername(username);
+    }
+
+    public void addFriend(Long userId, String friendNameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        var friend = userRepository.findByNameTag(friendNameTag)
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + friendNameTag));
+
+        user.getFriendsList().add(friend);
+        friend.getFriendsList().add(user);
+
+        userRepository.save(user);
+        userRepository.save(friend);
+    }
+
+    public void removeFriend(Long userId, String friendNameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        var friend = userRepository.findByNameTag(friendNameTag)
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + friendNameTag));
+
+        user.getFriendsList().remove(friend);
+        friend.getFriendsList().remove(user);
+
+        userRepository.save(user);
+        userRepository.save(friend);
+    }
+
+    public Boolean isFriend(Long userId, Long otherUserId) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        return user.getFriendsList().stream()
+                .anyMatch(friend -> friend.getId().equals(otherUserId));
+    }
+
+    public Set<FriendDTO> searchFriendByNameTag(Long userId, String nameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+
+        return user.getFriendsList().stream()
+                .filter(friend -> friend.getNameTag().toLowerCase().contains(nameTag.toLowerCase()))
+                .map(userMapper::toFriendDTO)
+                .collect(Collectors.toSet());
+    }
+
+    public Boolean isTwoFactorAuthenticationEnabled(String username) {
+        var validatedUsername = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new BadRequestException("User with this username doesn't exist!"))
+                .getUsername();
+        return userRepository.isTwoFactorAuthenticationEnabled(validatedUsername);
     }
 }

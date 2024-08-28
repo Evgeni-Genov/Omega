@@ -31,7 +31,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             "ORDER BY transaction.createdDate DESC")
     Page<Transaction> findAllByRecipientAndSender(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("SELECT t.amount, t.currency, t.description FROM Transaction t WHERE (t.sender.id = :userId AND t.recipient.id = :otherUserId) OR (t.sender.id = :otherUserId AND t.recipient.id = :userId) ORDER BY t.lastModifiedDate DESC")
+    @Query("SELECT t FROM Transaction t WHERE (t.sender.id = :userId AND t.recipient.id = :otherUserId) OR (t.sender.id = :otherUserId AND t.recipient.id = :userId) ORDER BY t.lastModifiedDate ASC")
     Page<Transaction> findByUserIdAndOtherUserId(@Param("userId") Long userId, @Param("otherUserId") Long otherUserId, Pageable pageable);
-
 }

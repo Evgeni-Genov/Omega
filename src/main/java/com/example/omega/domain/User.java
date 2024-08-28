@@ -1,11 +1,13 @@
 package com.example.omega.domain;
 
 import com.example.omega.domain.enumeration.Roles;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table
@@ -100,6 +102,15 @@ public class User extends AbstractAuditingEntity {
     @Column
     @OneToMany(mappedBy = "recipient", fetch = FetchType.EAGER)
     private List<Transaction> incomingTransactions;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_friends_list",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "friend_id")
+    )
+    @JsonIgnore
+    private Set<User> friendsList;
 
 //    @Column
 //    @JoinColumn(unique = true)
