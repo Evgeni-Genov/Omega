@@ -5,7 +5,6 @@ import com.example.omega.service.TransactionService;
 import com.example.omega.service.UserService;
 import com.example.omega.service.dto.CreditCardDTO;
 import com.example.omega.service.dto.TransactionDTO;
-import com.example.omega.service.dto.TransactionSummaryDTO;
 import com.example.omega.service.util.PaginationUtil;
 import com.example.omega.service.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -49,6 +50,14 @@ public class TransactionResource {
         return javers.getJsonConverter().toJson(snapshots);
     }
 
+    @GetMapping("/transactions/{transactionId}")
+    @Operation(summary = "Get Transaction by ID")
+    public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable Long transactionId) {
+        log.debug("Transaction with ID is being fetched: {}", transactionId);
+        var fetchedTransactionDTO = transactionService.getTransactionById(transactionId);
+        return ResponseEntity.ok().body(fetchedTransactionDTO);
+    }
+
     @GetMapping("/snapshots/{transactionId}")
     public String getTransactionSnapshots(@PathVariable Long transactionId) {
         var jqlQuery = QueryBuilder.byInstanceId(transactionId, Transaction.class);
@@ -71,17 +80,22 @@ public class TransactionResource {
         return ResponseEntity.ok().body(createdCreditCardDTO);
     }
 
-    //TODO: should include flag isFriend
+
     @GetMapping("/transactions")
-    public ResponseEntity<List<TransactionSummaryDTO>> getAllTransactionsBetweenTwoUsers(Principal principal, Pageable pageable,
-                                                                                         @RequestParam("userId") Long userId,
-                                                                                         @RequestParam("otherUserNameTag") String otherUserNameTag) {
+    public ResponseEntity<Map<String, Object>> getAllTransactionsBetweenTwoUsers(Principal principal, Pageable pageable,
+                                                                                 @RequestParam("userId") Long userId,
+                                                                                 @RequestParam("otherUserNameTag") String otherUserNameTag) {
         var user = securityUtils.extractCurrentUserIdFromPrincipal(principal);
         log.debug("User with ID: {} is trying to get all transactions between two users!", user);
-        var otherUserId = userService.getUserByNameTag(otherUserNameTag).getId();
-        var transactionsPage = transactionService.getAllTransactionBetweenTwoUsers(pageable, userId, otherUserId);
+        var otherUser = userService.getUserByNameTag(otherUserNameTag);
+        var transactionsPage = transactionService.getAllTransactionBetweenTwoUsers(pageable, userId, otherUser.getId());
         var headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), transactionsPage);
-        return ResponseEntity.ok().headers(headers).body(transactionsPage.getContent());
+
+        var response = new HashMap<String, Object>();
+        response.put("transactions", transactionsPage.getContent());
+        response.put("isFriend", userService.isFriend(userId, otherUser.getId()));
+
+        return ResponseEntity.ok().headers(headers).body(response);
     }
 
     @PostMapping("/transaction/request-funds")
@@ -93,5 +107,21 @@ public class TransactionResource {
         transactionDTO.setSenderId(currentUserId);
         var createdTransactionDTO = transactionService.requestFunds(transactionDTO);
         return ResponseEntity.ok().body(createdTransactionDTO);
+    }
+
+    @PatchMapping("/transaction/cancel/{transactionId}")
+    @Operation(summary = "Cancel Transaction")
+    public ResponseEntity<TransactionDTO> cancelTransaction(@PathVariable Long transactionId,
+                                                            Principal principal){
+        var currentUserId = securityUtils.extractCurrentUserIdFromPrincipal(principal);
+        log.debug("User with ID: {} is trying to cancel a Transaction !", currentUserId);
+        var cancelledTransaction = transactionService.cancelRequestedFunds(transactionId, currentUserId);
+        return ResponseEntity.ok().body(cancelledTransaction);
+    }
+
+    @GetMapping("/transactions/pending-requests/{userId}")
+    public ResponseEntity<List<TransactionDTO>> getPendingFundRequests(@PathVariable Long userId) {
+        var pendingRequests = transactionService.getPendingFundRequestsForUser(userId);
+        return ResponseEntity.ok(pendingRequests);
     }
 }

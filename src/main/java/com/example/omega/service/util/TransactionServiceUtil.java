@@ -4,6 +4,7 @@ import com.example.omega.domain.AccountBalance;
 import com.example.omega.domain.Budget;
 import com.example.omega.domain.Transaction;
 import com.example.omega.domain.enumeration.Currency;
+import com.example.omega.domain.enumeration.TransactionType;
 import com.example.omega.repository.AccountBalanceRepository;
 import com.example.omega.repository.TransactionRepository;
 import com.example.omega.service.UserService;
@@ -150,7 +151,7 @@ public class TransactionServiceUtil {
                 .stream()
                 .filter(balance -> balance.getCurrency() == currency)
                 .findFirst()
-                .orElseThrow(() -> new BadRequestException("Account balance not found"));
+                .orElseThrow(() -> new BadRequestException("Account balance not found!"));
     }
 
     /**
@@ -167,7 +168,7 @@ public class TransactionServiceUtil {
         log.debug("Calculating total amount added and spent by user with ID: {}", userId);
         var totalAddedFunds = transactions
                 .stream()
-                .filter(transaction -> !transaction.getIsExpense())
+                .filter(transaction -> !transaction.getIsExpense() && transaction.getTransactionType() == TransactionType.DEPOSIT)
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

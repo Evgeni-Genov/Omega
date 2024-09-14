@@ -26,7 +26,6 @@ public class TransactionReportService {
     private final UserService userService;
     private final TransactionServiceUtil transactionServiceUtil;
 
-
     /**
      * Generates a transaction report PDF for a specified user and date range.
      * This method orchestrates the creation of a transaction report document. It begins by fetching the user's name tag

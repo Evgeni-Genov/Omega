@@ -151,7 +151,7 @@ export default function SignUp() {
                 setSuccessMessage("Registration successful. Click the link in your email to activate your account.");
                 setTimeout(() => {
                     setSuccessMessage('');
-                    navigate('/');
+                    navigate('/signin');
                 }, 5000);
             }
         } catch (error) {

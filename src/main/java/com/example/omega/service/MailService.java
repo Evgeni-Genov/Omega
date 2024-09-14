@@ -42,13 +42,25 @@ public class MailService {
      * @param user      the optional user for which the verification code is generated
      */
     public void verificationCodeEmail(String recipient, User user) {
-        var subject = "Verification Code";
+        var subject = "Email Verification Code";
         var verificationCode = userService.returnSavedVerificationCode(user);
         log.debug("Sending email to: {} with verification code {}.", recipient, verificationCode);
 
-        sendEmail(recipient, subject, verificationCode);
+        var emailContent = new StringBuilder();
+        setEmailContent(user, emailContent, verificationCode);
+
+        sendEmail(recipient, subject, emailContent.toString());
     }
 
+    private static void setEmailContent(User user, StringBuilder emailContent, String verificationCode) {
+        emailContent.append("Dear ").append(user.getUsername()).append(",\n\n");
+        emailContent.append("To complete your login please fill in the following verification code:\n\n");
+        emailContent.append("Verification Code: ").append(verificationCode).append("\n\n");
+        emailContent.append("Please enter this code in the verification screen to login.\n\n");
+        emailContent.append("If you did not request this verification code, please ignore this email.\n\n");
+        emailContent.append("Best regards,\n");
+        emailContent.append("The Omega Team");
+    }
 
     /**
      * Create the password reset email.

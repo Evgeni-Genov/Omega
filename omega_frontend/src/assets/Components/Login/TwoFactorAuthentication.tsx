@@ -92,7 +92,7 @@ const TwoFactorAuthentication = ({userId, email, twoFactorAuthentication = false
 
     const handleEnable = async () => {
         try {
-            const response = await axiosInstance.post('/google-authenticator/verify-code', {
+            const response = await axiosInstance.post('/api/google-authenticator/verify-authenticator-code', {
                 id: userId,
                 twoFactorAuthCode: verificationCode
             });

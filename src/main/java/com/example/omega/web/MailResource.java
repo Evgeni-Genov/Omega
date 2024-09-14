@@ -33,6 +33,8 @@ public class MailResource {
         return ResponseEntity.ok("Email verified successfully");
     }
 
+
+
 }
 
 

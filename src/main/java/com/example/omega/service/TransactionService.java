@@ -1,9 +1,11 @@
 package com.example.omega.service;
 
+import com.example.omega.domain.AccountBalance;
 import com.example.omega.domain.enumeration.Currency;
 import com.example.omega.domain.enumeration.TransactionStatus;
 import com.example.omega.domain.enumeration.TransactionType;
 import com.example.omega.mapper.TransactionMapper;
+import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.TransactionRepository;
 import com.example.omega.repository.UserRepository;
 import com.example.omega.service.dto.CreditCardDTO;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -31,6 +34,7 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
     private final TransactionServiceUtil transactionServiceUtil;
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     /**
      * Save a transaction based on the provided TransactionDTO.
@@ -57,10 +61,10 @@ public class TransactionService {
      */
     @Transactional
     public TransactionDTO sendFunds(TransactionDTO transactionDTO) {
-        log.debug("Sending Money to user with nameTag: {} from user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
+        log.debug("Sending Money to user with nameTag: {} from user with id: {}", transactionDTO.getRecipientNameTag(), transactionDTO.getSenderId());
         var sender = userService.getUserById(transactionDTO.getSenderId());
         var senderBudgetingFlag = sender.getIsBudgetingEnabled();
-        var recipient = userService.getUserByNameTag(transactionDTO.getUserNameTag());
+        var recipient = userService.getUserByNameTag(transactionDTO.getRecipientNameTag());
 
         transactionDTO.setRecipientId(recipient.getId());
 
@@ -104,6 +108,7 @@ public class TransactionService {
 
     /**
      * Adds funds to a user's account balance based on the provided credit card details.
+     * If the user is newly created and doesn't have an AccountBalance, he will have an AccountBalance created.
      * This method validates the credit card details and simulates a bank call to ensure the transaction can proceed.
      * If the credit card details are valid and the simulated bank call is successful, the funds are added to the user's account balance.
      * The transaction is then saved and returned as a {@link TransactionDTO} with a status of SUCCESSFUL.
@@ -125,9 +130,16 @@ public class TransactionService {
         }
 
         var transactionDTO = transactionMapper.toTransactionDTO(creditCardDTO);
-        var accountBalance = transactionServiceUtil.findAccountBalance(transactionDTO.getSenderId(), transactionDTO.getCurrency());
-
-        accountBalance.setBalance(accountBalance.getBalance().add(transactionDTO.getAmount()));
+        AccountBalance accountBalance;
+        try {
+            accountBalance = transactionServiceUtil.findAccountBalance(transactionDTO.getSenderId(), transactionDTO.getCurrency());
+            accountBalance.setBalance(accountBalance.getBalance().add(transactionDTO.getAmount()));
+        } catch (BadRequestException e) {
+            accountBalance = new AccountBalance();
+            accountBalance.setUser(userMapper.toEntity(userService.getUserById(transactionDTO.getSenderId())));
+            accountBalance.setCurrency(transactionDTO.getCurrency());
+            accountBalance.setBalance(transactionDTO.getAmount());
+        }
         transactionServiceUtil.updateAccountBalance(accountBalance);
 
         transactionDTO.setTransactionStatus(TransactionStatus.SUCCESSFUL);
@@ -136,10 +148,10 @@ public class TransactionService {
 
     @Transactional
     public TransactionDTO requestFunds(TransactionDTO transactionDTO) {
-        log.debug("Requesting funds from user with nameTag: {} to user with id: {}", transactionDTO.getUserNameTag(), transactionDTO.getSenderId());
+        log.debug("Requesting funds from user with nameTag: {} to user with ID: {}", transactionDTO.getRecipientNameTag(), transactionDTO.getSenderId());
 
-        var recipient = userRepository.findByNameTag(transactionDTO.getUserNameTag())
-                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + transactionDTO.getUserNameTag()));
+        var recipient = userRepository.findByNameTag(transactionDTO.getRecipientNameTag())
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + transactionDTO.getRecipientNameTag()));
 
         if (transactionDTO.getSenderId().equals(recipient.getId())) {
             throw new BadRequestException("Sender and recipient cannot be the same user");
@@ -159,6 +171,28 @@ public class TransactionService {
         }
 
         return saveTransaction(transactionDTO);
+    }
+
+    @Transactional
+    public TransactionDTO cancelRequestedFunds(Long transactionId, Long currentUserId){
+        log.debug("User with ID:{} is cancelling the requested funds", currentUserId);
+
+        var transaction = transactionRepository.findById(transactionId).orElseThrow(() -> new BadRequestException("Transaction not found!"));
+
+        if(!transaction.getRecipient().getId().equals(currentUserId)){
+            throw new BadRequestException("You can cancel only Transaction where the Funds are requested FROM YOU!");
+        }
+
+        if (transaction.getTransactionStatus() != TransactionStatus.PENDING) {
+            throw new BadRequestException("Only pending transactions can be cancelled!");
+        }
+
+        transaction.setAmount(BigDecimal.ZERO);
+        transaction.setTransactionStatus(TransactionStatus.CANCELLED);
+        transaction.setDescription("This Transaction was cancelled!");
+
+        var savedTransaction = transactionRepository.save(transaction);
+        return transactionMapper.toDTO(savedTransaction);
     }
 
     /**
@@ -185,12 +219,25 @@ public class TransactionService {
      */
     public Page<TransactionSummaryDTO> getAllTransactionBetweenTwoUsers(Pageable pageable, Long userId, Long otherUserId) {
         var transactions = transactionRepository.findByUserIdAndOtherUserId(userId, otherUserId, pageable);
-        var isFriend = userService.isFriend(userId, otherUserId);
 
-        return transactions.map(transaction -> {
-            var dto = transactionMapper.toTransactionSummaryDTO(transaction);
-            dto.setIsFriend(isFriend);
-            return dto;
-        });
+        return transactions.map(transactionMapper::toTransactionSummaryDTO);
+    }
+
+    /**
+     * Get Transaction by ID.
+     *
+     * @param id the id of the supposed Transaction.
+     * @return the TransactionDTO if it exists.
+     */
+    public TransactionDTO getTransactionById(Long id){
+        var fetchedTransaction = transactionRepository.findById(id).orElseThrow(() -> new BadRequestException("Transaction not found!"));
+        return transactionMapper.toDTO(fetchedTransaction);
+    }
+
+    public List<TransactionDTO> getPendingFundRequestsForUser(Long userId) {
+        var pendingFundRequests = transactionRepository.findPendingFundRequestsForUser(userId);
+        return pendingFundRequests.stream()
+                .map(transactionMapper::toDTO)
+                .toList();
     }
 }

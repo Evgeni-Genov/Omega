@@ -83,6 +83,17 @@ public class ScheduledTasks {
         log.debug("Deletion of all expired Transactions completed!");
     }
 
+    /**
+     * Scheduled task to delete all non-activated users from the system.
+     * <p>
+     * This method is executed daily at 3 AM as per the cron expression defined in {@code EVERY_DAY_3_AM}.
+     * It removes all users from the repository whose {@code enabled} status is set to {@code false}.
+     * <p>
+     * Runs within a transaction to ensure that the delete operation is atomic.
+     * <p>
+     * The scheduling and transaction management are handled by Spring annotations {@code @Scheduled}
+     * and {@code @Transactional} respectively.</p>
+     */
     @Scheduled(cron = EVERY_DAY_3_AM)
     @Transactional
     public void deleteAllNonActivatedUsers(){
@@ -91,7 +102,17 @@ public class ScheduledTasks {
         log.debug("Deletion of all non activated users completed!");
     }
 
-
+    /**
+     * Scheduled task to delete all expired password reset links from the system.
+     * <p>
+     * This method is executed every two minutes as per the cron expression defined in {@code EVERY_TWO_MINUTES}.
+     * It removes all password reset links from the repository that have expired based on the current time.
+     * <p>
+     * Runs within a transaction to ensure that the delete operation is atomic.
+     * <p>
+     * The scheduling and transaction management are handled by Spring annotations {@code @Scheduled}
+     * and {@code @Transactional} respectively.</p>
+     */
     @Scheduled(cron = EVERY_TWO_MINUTES)
     @Transactional
     public void deleteExpiredPasswordResetLink() {
@@ -100,5 +121,4 @@ public class ScheduledTasks {
         passwordResetLinkRepository.deleteByExpirationTimeBefore(now);
         log.debug("Deletion of all expired Password Reset Links completed!");
     }
-
 }

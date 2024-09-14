@@ -59,11 +59,7 @@ public class UserService {
         userServiceUtil.validateUsernameAndPasswordNotEmpty(user);
         userServiceUtil.validateUsernameNotTaken(user.getUsername());
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
-        user.setRole(Roles.ROLE_USER);
-        user.setLocked(false);
-        user.setEnabled(false);
+        configureNewUser(user);
 
         var savedUser = userRepository.save(user);
         log.debug("User created successfully: {}", user);
@@ -168,6 +164,18 @@ public class UserService {
         return userMapper.toDTO(updatedUser);
     }
 
+    /**
+     * Retrieves a list of users whose name tags contain the specified substring, ignoring case.
+     * <p>
+     * This method searches for users with a {@code nameTag} that contains the provided substring,
+     * ignoring case. If no users are found, a {@link BadRequestException} is thrown.
+     * For each user found, it maps the user entity to a {@link UserDTO}. If a user does not have an avatar,
+     * a default avatar path is set in the {@link UserDTO}.
+     *
+     * @param nameTag the substring to search for within username tags.
+     * @return a list of {@link UserDTO} objects representing the users whose name tags contain the specified substring.
+     * @throws BadRequestException if no users are found with a name tag containing the specified substring.
+     */
     public List<UserDTO> getUsersByNameTagContaining(String nameTag) {
         log.debug("Request to get users by nameTag containing: {}", nameTag);
         var users = userRepository.findByNameTagContainingIgnoreCase(nameTag);
@@ -450,7 +458,7 @@ public class UserService {
             var filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
             var filePath = Paths.get(USER_PROFILE_DIR, filename);
             Files.write(filePath, avatarFile.getBytes());
-            return "userProfiles/" + filename;
+            return filename;
         } catch (IOException e) {
             throw new BadRequestException("Failed to save avatar file");
         }
@@ -557,6 +565,17 @@ public class UserService {
         return userRepository.findEmailByUsername(username);
     }
 
+    /**
+     * Adds a friend to the user's friend list and vice versa.
+     * <p>
+     * This method validates the user by their ID and finds the friend by their {@code friendNameTag}.
+     * If the friend is found, both users are added to each other's friends list.
+     * The changes are then saved in the repository for persistence.
+     *
+     * @param userId        the ID of the user who is adding a friend.
+     * @param friendNameTag the name tag of the friend to be added.
+     * @throws BadRequestException if the user or friend cannot be found.
+     */
     public void addFriend(Long userId, String friendNameTag) {
         var user = userServiceUtil.validateAndGetUser(userId);
         var friend = userRepository.findByNameTag(friendNameTag)
@@ -569,6 +588,17 @@ public class UserService {
         userRepository.save(friend);
     }
 
+    /**
+     * Removes a friend from the user's friend list and vice versa.
+     * <p>
+     * This method validates the user by their ID and finds the friend by their {@code friendNameTag}.
+     * If the friend is found, both users are removed from each other's friends list.
+     * The changes are then saved in the repository for persistence.
+     *
+     * @param userId        the ID of the user who is removing a friend.
+     * @param friendNameTag the name tag of the friend to be removed.
+     * @throws BadRequestException if the user or friend cannot be found.
+     */
     public void removeFriend(Long userId, String friendNameTag) {
         var user = userServiceUtil.validateAndGetUser(userId);
         var friend = userRepository.findByNameTag(friendNameTag)
@@ -580,13 +610,32 @@ public class UserService {
         userRepository.save(user);
         userRepository.save(friend);
     }
-
+    /**
+     * Checks if two users are friends.
+     * <p>
+     * This method validates the user by their ID and checks if the {@code otherUserId}
+     * is present in the user's friends list.
+     *
+     * @param userId      the ID of the user whose friends list is to be checked.
+     * @param otherUserId the ID of the other user to check for friendship.
+     * @return {@code true} if the {@code otherUserId} is found in the user's friends list, {@code false} otherwise.
+     */
     public Boolean isFriend(Long userId, Long otherUserId) {
         var user = userServiceUtil.validateAndGetUser(userId);
         return user.getFriendsList().stream()
                 .anyMatch(friend -> friend.getId().equals(otherUserId));
     }
 
+    /**
+     * Searches the user's friend list by a partial or full name tag.
+     * <p>
+     * This method validates the user by their ID and filters their friends list
+     * to find friends whose name tags contain the specified {@code nameTag} (case-insensitive).
+     *
+     * @param userId  the ID of the user whose friends list is to be searched.
+     * @param nameTag the partial or full name tag to search for in the friends list.
+     * @return a set of {@link FriendDTO} objects matching the search criteria.
+     */
     public Set<FriendDTO> searchFriendByNameTag(Long userId, String nameTag) {
         var user = userServiceUtil.validateAndGetUser(userId);
 
@@ -596,11 +645,36 @@ public class UserService {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Checks if two-factor authentication is enabled for a specific user.
+     * <p>
+     * This method finds the user by their username and checks if two-factor authentication
+     * is enabled for that user in the repository.
+     *
+     * @param username the username of the user to check for two-factor authentication.
+     * @return {@code true} if two-factor authentication is enabled, {@code false} otherwise.
+     * @throws BadRequestException if the user cannot be found.
+     */
     public Boolean isTwoFactorAuthenticationEnabled(String username) {
         var validatedUsername = userRepository
                 .findByUsername(username)
                 .orElseThrow(() -> new BadRequestException("User with this username doesn't exist!"))
                 .getUsername();
         return userRepository.isTwoFactorAuthenticationEnabled(validatedUsername);
+    }
+
+    /**
+     * Configures a new user with default values and settings.
+     *
+     * @param user the User to be created.
+     */
+    private void configureNewUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
+        user.setRole(Roles.ROLE_USER);
+        user.setLocked(false);
+        user.setEnabled(false);
+        user.setIsBudgetingEnabled(false);
+        user.setTwoFactorAuthentication(false);
     }
 }

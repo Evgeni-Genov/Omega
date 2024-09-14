@@ -228,7 +228,7 @@ export default function SignIn() {
         }
 
         try {
-            await axiosInstance.post(`/user/reset-password?email=${forgotPasswordEmail}`);
+            await axiosInstance.post(`/api/reset-password?email=${forgotPasswordEmail}`);
             setErrorMessage('Password reset link has been sent to your email.');
         } catch (error) {
             setErrorMessage('Failed to send password reset link. Please try again.');

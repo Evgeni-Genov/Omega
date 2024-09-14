@@ -13,6 +13,7 @@ import lombok.*;
 @Builder
 public class UserDocument extends AbstractAuditingEntity {
 
+    //TODO: maybe to use one more table add this,
     @Id
     @GeneratedValue(generator = "user_document_sequence_generator", strategy = GenerationType.SEQUENCE)
     @SequenceGenerator(name = "user_document_sequence_generator", initialValue = 1000, allocationSize = 1)
