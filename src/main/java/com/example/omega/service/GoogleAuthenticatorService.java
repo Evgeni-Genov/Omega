@@ -49,8 +49,8 @@ public class GoogleAuthenticatorService {
      * compatibility with Google Authenticator.
      *
      * @param secretKey the Base32-encoded secret key
-     * @param account the account name (e.g., email)
-     * @param issuer the issuer name (e.g., company or application name)
+     * @param account   the account name (e.g., email)
+     * @param issuer    the issuer name (e.g., company or application name)
      * @return a TOTP URI that can be converted to a QR code
      */
     public String getGoogleAuthenticatorBarCode(String secretKey, String account, String issuer) {

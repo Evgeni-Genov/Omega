@@ -32,9 +32,6 @@ public class MailResource {
         userService.activateUser(user);
         return ResponseEntity.ok("Email verified successfully");
     }
-
-
-
 }
 
 

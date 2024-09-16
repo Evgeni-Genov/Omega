@@ -33,7 +33,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from 'react-router-dom';
-import {createTheme, lighten, styled, ThemeProvider} from '@mui/material/styles';
+import {createTheme, styled, ThemeProvider} from '@mui/material/styles';
 import InfoIcon from "@mui/icons-material/Info";
 import DescriptionIcon from '@mui/icons-material/Description';
 import {ArcElement, Chart as ChartJS, Legend, Tooltip} from 'chart.js';
@@ -510,7 +510,7 @@ const MainPage = () => {
 
             setAccountBalance(prevBalance => {
                 if (prevBalance) {
-                    return {balance: prevBalance.balance - parseFloat(transactionDetails.amount)};
+                    return { balance: prevBalance.balance - parseFloat(transactionDetails.amount) };
                 }
                 return prevBalance;
             });
@@ -518,9 +518,18 @@ const MainPage = () => {
             setTransactions(prevTransactions => {
                 const updatedTransactions = prevTransactions.map(t =>
                     t.id === transactionDetails.requestId
-                        ? {...t, transactionStatus: 'COMPLETED'}
+                        ? { ...t, transactionStatus: 'SUCCESSFUL' }
                         : t
                 );
+
+                // Remove the pending transaction if it exists
+                const pendingTransactionIndex = updatedTransactions.findIndex(
+                    t => t.id === transactionDetails.requestId && t.transactionStatus === 'PENDING'
+                );
+                if (pendingTransactionIndex !== -1) {
+                    updatedTransactions.splice(pendingTransactionIndex, 1);
+                }
+
                 if (!transactionDetails.requestId) {
                     updatedTransactions.unshift({
                         ...response.data,
@@ -548,17 +557,6 @@ const MainPage = () => {
     const handleSendFundsDialog = async () => {
         await handleSendFunds(transactionDetails);
         setSendFundsDialogState({open: false, fromUserHistory: false});
-    };
-
-    const handleSendFundsRequest = async (request) => {
-        const transactionDetails = {
-            userNameTag: request.senderNameTag,
-            amount: request.amount.toString(),
-            description: '',
-            currency: request.currency,
-            requestId: request.id,
-        };
-        await handleSendFunds(transactionDetails);
     };
 
     const handleAddFundsSubmit = async () => {
@@ -1032,37 +1030,260 @@ const MainPage = () => {
         }
     };
 
-        return (
-            <ThemeProvider theme={theme}>
-                <Container component="main" maxWidth="md"
-                           sx={{backgroundColor: 'white', borderRadius: 2, boxShadow: 3, padding: 3, mt: 8}}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                        <Box display="flex" alignItems="center" width="70%">
-                            {avatarUrl ? (
-                                <Avatar src={avatarUrl} alt="User Avatar" sx={{width: 56, height: 56, marginRight: 2}}/>
-                            ) : (
-                                <Avatar sx={{width: 56, height: 56, marginRight: 2, bgcolor: 'rebeccapurple'}}>
-                                    {userId?.charAt(0).toUpperCase() || 'U'}
-                                </Avatar>
+    return (
+        <ThemeProvider theme={theme}>
+            <Container component="main" maxWidth="md"
+                       sx={{backgroundColor: 'white', borderRadius: 2, boxShadow: 3, padding: 3, mt: 8}}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <Box display="flex" alignItems="center" width="70%">
+                        {avatarUrl ? (
+                            <Avatar src={avatarUrl} alt="User Avatar" sx={{width: 56, height: 56, marginRight: 2}}/>
+                        ) : (
+                            <Avatar sx={{width: 56, height: 56, marginRight: 2, bgcolor: 'rebeccapurple'}}>
+                                {userId?.charAt(0).toUpperCase() || 'U'}
+                            </Avatar>
+                        )}
+                        <Autocomplete
+                            freeSolo
+                            options={mainSearchSuggestions}
+                            getOptionLabel={(option) => option.nameTag || ''}
+                            renderOption={(props, option) => {
+                                const {key, ...otherProps} = props;
+                                return (
+                                    <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}}
+                                         key={key} {...otherProps}>
+                                        <Avatar
+                                            src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
+                                            alt={option.nameTag}
+                                            sx={{width: 32, height: 32, marginRight: 2}}
+                                        />
+                                        {option.nameTag}
+                                    </Box>
+                                );
+                            }}
+                            renderInput={(params) => (
+                                <CustomTextField
+                                    {...params}
+                                    margin="dense"
+                                    label="Search User"
+                                    type="text"
+                                    fullWidth
+                                    value={mainSearchUser}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setMainSearchUser(value);
+
+                                        if (value.length > 2) {
+                                            fetchMainSuggestions(value);
+                                        } else {
+                                            setMainSearchSuggestions([]);
+                                        }
+                                    }}
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {searchLoading ?
+                                                    <CircularProgress color="inherit" size={20}/> : null}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        ),
+                                    }}
+                                />
                             )}
+                            onChange={(event, newValue) => {
+                                if (newValue && typeof newValue === 'object' && newValue.nameTag) {
+                                    handleMainSearchSuggestionClick(newValue);
+                                } else {
+                                    setSelectedUser(null);
+                                }
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                                setMainSearchUser(newInputValue);
+                            }}
+                            sx={{width: '50%'}}
+                        />
+                    </Box>
+                    <IconButton onClick={handleMenuClick} sx={{color: '#663399'}}>
+                        <SettingsIcon/>
+                    </IconButton>
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={() => handleMenuClose(null)}
+                    >
+                        <MenuItem
+                            sx={{
+                                '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
+                                backgroundColor: 'white',
+                                color: 'black',
+                                '&.Mui-focusVisible': {
+                                    backgroundColor: 'rebeccapurple',
+                                    color: 'white',
+                                }
+                            }}
+                            onClick={() => handleMenuClose('profile')}
+                        >
+                            Profile
+                        </MenuItem>
+                        <MenuItem
+                            sx={{
+                                '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
+                                backgroundColor: 'white',
+                                color: 'black',
+                                '&.Mui-focusVisible': {
+                                    backgroundColor: 'rebeccapurple',
+                                    color: 'white',
+                                }
+                            }}
+                            onClick={() => handleMenuClose('logout')}
+                        >
+                            Logout
+                        </MenuItem>
+                    </Menu>
+                </Box>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <StyledCard>
+                        <CardContent>
+                            <Box display="flex" alignItems="center">
+                                <AccountBalanceIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
+                                <Box>
+                                    <Typography variant="h5" component="div">
+                                        Account Balance
+                                    </Typography>
+                                    <Typography variant="h4" color="text.secondary">
+                                        {formatCurrency(accountBalance?.balance || 0)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </CardContent>
+                    </StyledCard>
+                    <Box display="flex" flexDirection="column">
+                        <PurpleButton variant="contained" startIcon={<SendIcon/>}
+                                      onClick={() => setSendFundsDialogState({open: true, fromUserHistory: false})}>Send
+                            Funds</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<AddCardIcon/>} onClick={handleAddFunds}>Add
+                            Funds</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<AccountBalanceIcon/>}
+                                      onClick={() => setOpenBudget(true)}>Budget</PurpleButton>
+                        <PurpleButton variant="contained" startIcon={<DescriptionIcon/>}
+                                      onClick={() => setOpenReport(true)}>Report</PurpleButton>
+                    </Box>
+                </Box>
+                <Typography variant="h5" gutterBottom>
+                    Recent Transactions
+                </Typography>
+                <Grid container spacing={3}>
+                    {transactions.map((transaction, index) => (
+                        <Grid item xs={12} key={index}>
+                            <TransactionCard>
+                                <Box display="flex" alignItems="center" mr={2}>
+                                    {renderTransactionIcon(transaction)}
+                                </Box>
+                                <Box flexGrow={1}>
+                                    <Typography variant="h6">
+                                        {transaction.description}
+                                    </Typography>
+                                    <Typography component="div" color="textSecondary">
+                                        Amount: {
+                                        transaction.transactionStatus === 'PENDING' && transaction.recipientId === parseInt(userId) ? (
+                                            <NegativeAmount
+                                                component="span">{formatCurrency(transaction.amount)}</NegativeAmount>
+                                        ) : transaction.isExpense ? (
+                                            <NegativeAmount
+                                                component="span">{formatCurrency(Math.abs(transaction.amount))}</NegativeAmount>
+                                        ) : (
+                                            <PositiveAmount
+                                                component="span">{formatCurrency(transaction.amount)}</PositiveAmount>
+                                        )
+                                    }
+                                    </Typography>
+                                    <Typography color="textSecondary">
+                                        Date: {transaction.createdDate ? formatDate(transaction.createdDate) : 'Invalid Date'}
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">
+                                        Status: {transaction.transactionStatus}
+                                    </Typography>
+                                </Box>
+                                <Box display="flex" justifyContent="flex-end" alignItems="center">
+                                    {transaction.transactionStatus === 'PENDING' && transaction.recipientId === parseInt(userId) ? (
+                                        <>
+                                            <Button
+                                                onClick={() => handleCancelRequest(transaction.id)}
+                                                color="secondary"
+                                                variant="outlined"
+                                                style={{marginRight: '8px'}}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <PurpleButton
+                                                onClick={() => handleExistingFundRequest(transaction)}
+                                                variant="contained"
+                                            >
+                                                Send Requested Funds
+                                            </PurpleButton>
+                                        </>
+                                    ) : (
+                                        <IconButton
+                                            onClick={() => {
+                                                setSelectedTransaction(transaction);
+                                                fetchTransactionSnapshots(transaction.id);
+                                            }}
+                                        >
+                                            <InfoIcon/>
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            </TransactionCard>
+                        </Grid>
+                    ))}
+                </Grid>
+                <Dialog
+                    open={sendFundsDialogState.open}
+                    onClose={() => setSendFundsDialogState({open: false, fromUserHistory: false})}
+                >
+                    <DialogTitle>Send Funds</DialogTitle>
+                    <DialogContent>
+                        {errorMessage && (
+                            <Typography
+                                sx={{
+                                    color: 'error.main',
+                                    fontWeight: 'bold',
+                                    bgcolor: 'error.light',
+                                    p: 1,
+                                    borderRadius: 1,
+                                }}
+                                align="center"
+                                gutterBottom
+                            >
+                                {errorMessage}
+                            </Typography>
+                        )}
+                        {sendFundsDialogState.fromUserHistory ? (
+                            <CustomTextField
+                                margin="dense"
+                                name="userNameTag"
+                                label="User"
+                                type="text"
+                                fullWidth
+                                value={transactionDetails.userNameTag}
+                                disabled
+                            />
+                        ) : (
                             <Autocomplete
                                 freeSolo
-                                options={mainSearchSuggestions}
-                                getOptionLabel={(option) => option.nameTag || ''}
-                                renderOption={(props, option) => {
-                                    const {key, ...otherProps} = props;
-                                    return (
-                                        <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}}
-                                             key={key} {...otherProps}>
-                                            <Avatar
-                                                src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
-                                                alt={option.nameTag}
-                                                sx={{width: 32, height: 32, marginRight: 2}}
-                                            />
-                                            {option.nameTag}
-                                        </Box>
-                                    );
-                                }}
+                                options={sendFundsSuggestions}
+                                getOptionLabel={(option) => option.nameTag}
+                                renderOption={(props, option) => (
+                                    <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}} {...props}>
+                                        <Avatar
+                                            src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
+                                            alt={option.nameTag}
+                                            sx={{width: 32, height: 32, marginRight: 2}}
+                                        />
+                                        {option.nameTag}
+                                    </Box>
+                                )}
                                 renderInput={(params) => (
                                     <CustomTextField
                                         {...params}
@@ -1070,15 +1291,15 @@ const MainPage = () => {
                                         label="Search User"
                                         type="text"
                                         fullWidth
-                                        value={mainSearchUser}
+                                        value={sendFundsSearchUser}
                                         onChange={(e) => {
                                             const value = e.target.value;
-                                            setMainSearchUser(value);
+                                            setSendFundsSearchUser(value);
 
                                             if (value.length > 2) {
-                                                fetchMainSuggestions(value);
+                                                fetchSendFundsSuggestions(value);
                                             } else {
-                                                setMainSearchSuggestions([]);
+                                                setSendFundsSuggestions([]);
                                             }
                                         }}
                                         InputProps={{
@@ -1094,853 +1315,633 @@ const MainPage = () => {
                                     />
                                 )}
                                 onChange={(event, newValue) => {
-                                    if (newValue && typeof newValue === 'object' && newValue.nameTag) {
-                                        handleMainSearchSuggestionClick(newValue);
-                                    } else {
-                                        setSelectedUser(null);
+                                    if (newValue) {
+                                        setTransactionDetails(prevDetails => ({
+                                            ...prevDetails,
+                                            userNameTag: newValue.nameTag
+                                        }));
                                     }
                                 }}
-                                onInputChange={(event, newInputValue) => {
-                                    setMainSearchUser(newInputValue);
-                                }}
-                                sx={{width: '50%'}}
                             />
-                        </Box>
-                        <IconButton onClick={handleMenuClick} sx={{color: '#663399'}}>
-                            <SettingsIcon/>
-                        </IconButton>
-                        <Menu
-                            anchorEl={anchorEl}
-                            open={Boolean(anchorEl)}
-                            onClose={() => handleMenuClose(null)}
+                        )}
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={transactionDetails.amount}
+                            onChange={handleInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="description"
+                            label="Description"
+                            type="text"
+                            fullWidth
+                            value={transactionDetails.description}
+                            onChange={handleInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="currency"
+                            label="Currency"
+                            select
+                            fullWidth
+                            value={transactionDetails.currency}
+                            onChange={handleInputChange}
                         >
-                            <MenuItem
-                                sx={{
-                                    '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
-                                    backgroundColor: 'white',
-                                    color: 'black',
-                                    '&.Mui-focusVisible': {
-                                        backgroundColor: 'rebeccapurple',
-                                        color: 'white',
-                                    }
-                                }}
-                                onClick={() => handleMenuClose('profile')}
-                            >
-                                Profile
-                            </MenuItem>
-                            <MenuItem
-                                sx={{
-                                    '&:hover': {backgroundColor: 'rebeccapurple', color: 'white'},
-                                    backgroundColor: 'white',
-                                    color: 'black',
-                                    '&.Mui-focusVisible': {
-                                        backgroundColor: 'rebeccapurple',
-                                        color: 'white',
-                                    }
-                                }}
-                                onClick={() => handleMenuClose('logout')}
-                            >
-                                Logout
-                            </MenuItem>
-                        </Menu>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                        <StyledCard>
-                            <CardContent>
-                                <Box display="flex" alignItems="center">
-                                    <AccountBalanceIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
-                                    <Box>
-                                        <Typography variant="h5" component="div">
-                                            Account Balance
-                                        </Typography>
-                                        <Typography variant="h4" color="text.secondary">
-                                            {formatCurrency(accountBalance?.balance || 0)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            </CardContent>
-                        </StyledCard>
-                        <Box display="flex" flexDirection="column">
-                            <PurpleButton variant="contained" startIcon={<SendIcon/>}
-                                          onClick={() => setSendFundsDialogState({open: true, fromUserHistory: false})}>Send
-                                Funds</PurpleButton>
-                            <PurpleButton variant="contained" startIcon={<AddCardIcon/>} onClick={handleAddFunds}>Add
-                                Funds</PurpleButton>
-                            <PurpleButton variant="contained" startIcon={<AccountBalanceIcon/>}
-                                          onClick={() => setOpenBudget(true)}>Budget</PurpleButton>
-                            <PurpleButton variant="contained" startIcon={<DescriptionIcon/>}
-                                          onClick={() => setOpenReport(true)}>Report</PurpleButton>
-                        </Box>
-                    </Box>
-                    <Typography variant="h5" gutterBottom>
-                        Recent Transactions
-                    </Typography>
-                    <Grid container spacing={3}>
-                        {transactions.map((transaction, index) => (
-                            <Grid item xs={12} key={index}>
-                                <TransactionCard>
-                                    <Box display="flex" alignItems="center" mr={2}>
-                                        {renderTransactionIcon(transaction)}
-                                    </Box>
-                                    <Box flexGrow={1}>
-                                        <Typography variant="h6">
-                                            {transaction.description}
-                                        </Typography>
-                                        <Typography component="div" color="textSecondary">
-                                            Amount: {
-                                            transaction.transactionStatus === 'PENDING' && transaction.recipientId === parseInt(userId) ? (
-                                                <NegativeAmount component="span">{formatCurrency(transaction.amount)}</NegativeAmount>
-                                            ) : transaction.isExpense ? (
-                                                <NegativeAmount component="span">{formatCurrency(Math.abs(transaction.amount))}</NegativeAmount>
-                                            ) : (
-                                                <PositiveAmount component="span">{formatCurrency(transaction.amount)}</PositiveAmount>
-                                            )
-                                        }
-                                        </Typography>
-                                        <Typography color="textSecondary">
-                                            Date: {transaction.createdDate ? formatDate(transaction.createdDate) : 'Invalid Date'}
-                                        </Typography>
-                                        <Typography variant="body2" color="textSecondary">
-                                            Status: {transaction.transactionStatus}
-                                        </Typography>
-                                    </Box>
-                                    <Box display="flex" justifyContent="flex-end" alignItems="center">
-                                        {transaction.transactionStatus === 'PENDING' && transaction.recipientId === parseInt(userId) ? (
-                                            <>
-                                                <Button
-                                                    onClick={() => handleCancelRequest(transaction.id)}
-                                                    color="secondary"
-                                                    variant="outlined"
-                                                    style={{marginRight: '8px'}}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <PurpleButton
-                                                    onClick={() => handleExistingFundRequest(transaction)}
-                                                    variant="contained"
-                                                >
-                                                    Send Requested Funds
-                                                </PurpleButton>
-                                            </>
-                                        ) : (
-                                            <IconButton
-                                                onClick={() => {
-                                                    setSelectedTransaction(transaction);
-                                                    fetchTransactionSnapshots(transaction.id);
-                                                }}
-                                            >
-                                                <InfoIcon />
-                                            </IconButton>
-                                        )}
-                                    </Box>
-                                </TransactionCard>
-                            </Grid>
-                        ))}
-                    </Grid>
-                    <Dialog
-                        open={sendFundsDialogState.open}
-                        onClose={() => setSendFundsDialogState({open: false, fromUserHistory: false})}
-                    >
-                        <DialogTitle>Send Funds</DialogTitle>
-                        <DialogContent>
-                            {errorMessage && (
-                                <Typography
-                                    sx={{
-                                        color: 'error.main',
-                                        fontWeight: 'bold',
-                                        bgcolor: 'error.light',
-                                        p: 1,
-                                        borderRadius: 1,
-                                    }}
-                                    align="center"
-                                    gutterBottom
-                                >
-                                    {errorMessage}
-                                </Typography>
-                            )}
-                            {sendFundsDialogState.fromUserHistory ? (
-                                <CustomTextField
-                                    margin="dense"
-                                    name="userNameTag"
-                                    label="User"
-                                    type="text"
-                                    fullWidth
-                                    value={transactionDetails.userNameTag}
-                                    disabled
-                                />
-                            ) : (
-                                <Autocomplete
-                                    freeSolo
-                                    options={sendFundsSuggestions}
-                                    getOptionLabel={(option) => option.nameTag}
-                                    renderOption={(props, option) => (
-                                        <Box component="li" sx={{'& > img': {mr: 2, flexShrink: 0}}} {...props}>
-                                            <Avatar
-                                                src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${option.nameTag}`}
-                                                alt={option.nameTag}
-                                                sx={{width: 32, height: 32, marginRight: 2}}
-                                            />
-                                            {option.nameTag}
-                                        </Box>
-                                    )}
-                                    renderInput={(params) => (
-                                        <CustomTextField
-                                            {...params}
-                                            margin="dense"
-                                            label="Search User"
-                                            type="text"
-                                            fullWidth
-                                            value={sendFundsSearchUser}
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                setSendFundsSearchUser(value);
-
-                                                if (value.length > 2) {
-                                                    fetchSendFundsSuggestions(value);
-                                                } else {
-                                                    setSendFundsSuggestions([]);
-                                                }
-                                            }}
-                                            InputProps={{
-                                                ...params.InputProps,
-                                                endAdornment: (
-                                                    <>
-                                                        {searchLoading ?
-                                                            <CircularProgress color="inherit" size={20}/> : null}
-                                                        {params.InputProps.endAdornment}
-                                                    </>
-                                                ),
-                                            }}
-                                        />
-                                    )}
-                                    onChange={(event, newValue) => {
-                                        if (newValue) {
-                                            setTransactionDetails(prevDetails => ({
-                                                ...prevDetails,
-                                                userNameTag: newValue.nameTag
-                                            }));
-                                        }
-                                    }}
-                                />
-                            )}
-                            <CustomTextField
-                                margin="dense"
-                                name="amount"
-                                label="Amount"
-                                type="number"
-                                fullWidth
-                                value={transactionDetails.amount}
-                                onChange={handleInputChange}
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="description"
-                                label="Description"
-                                type="text"
-                                fullWidth
-                                value={transactionDetails.description}
-                                onChange={handleInputChange}
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="currency"
-                                label="Currency"
-                                select
-                                fullWidth
-                                value={transactionDetails.currency}
-                                onChange={handleInputChange}
-                            >
-                                <MenuItem value="USD">USD</MenuItem>
-                                {/*<MenuItem value="BGN">BGN</MenuItem>*/}
-                                {/*<MenuItem value="EUR">EUR</MenuItem>*/}
-                                {/*<MenuItem value="GBP">GBP</MenuItem>*/}
-                                {/*<MenuItem value="JPY">JPY</MenuItem>*/}
-                            </CustomTextField>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setSendFundsDialogState({open: false, fromUserHistory: false})}
-                                    color="secondary">
-                                Cancel
-                            </Button>
-                            <PurpleButton onClick={handleSendFundsDialog} variant="contained">
-                                Send
-                            </PurpleButton>
-                        </DialogActions>
-                    </Dialog>
-                    <Dialog open={selectedUser !== null} onClose={() => setSelectedUser(null)} maxWidth="md" fullWidth>
+                            <MenuItem value="USD">USD</MenuItem>
+                            {/*<MenuItem value="BGN">BGN</MenuItem>*/}
+                            {/*<MenuItem value="EUR">EUR</MenuItem>*/}
+                            {/*<MenuItem value="GBP">GBP</MenuItem>*/}
+                            {/*<MenuItem value="JPY">JPY</MenuItem>*/}
+                        </CustomTextField>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSendFundsDialogState({open: false, fromUserHistory: false})}
+                                color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleSendFundsDialog} variant="contained">
+                            Send
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+                <Dialog open={selectedUser !== null} onClose={() => setSelectedUser(null)} maxWidth="md" fullWidth>
+                    <DialogTitle
+                        style={{background: 'rebeccapurple', color: 'white', textAlign: 'center', padding: '16px'}}>
                         <DialogTitle
-                            style={{background: 'rebeccapurple', color: 'white', textAlign: 'center', padding: '16px'}}>
-                            <DialogTitle
-                                style={{
-                                    background: 'rebeccapurple',
-                                    color: 'white',
-                                    textAlign: 'center',
-                                    padding: '16px'
-                                }}>
-                                <Box display="flex" alignItems="center" justifyContent="center">
-                                    <Avatar
-                                        src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${selectedUser?.nameTag}`}
-                                        alt={selectedUser?.nameTag}
-                                        sx={{width: 64, height: 64, marginRight: 2}}
-                                    />
-                                    <Typography variant="h5"
-                                                style={{fontWeight: 'bold'}}>{selectedUser?.nameTag}</Typography>
-                                </Box>
-                            </DialogTitle>
+                            style={{
+                                background: 'rebeccapurple',
+                                color: 'white',
+                                textAlign: 'center',
+                                padding: '16px'
+                            }}>
+                            <Box display="flex" alignItems="center" justifyContent="center">
+                                <Avatar
+                                    src={`${axiosInstance.defaults.baseURL}/api/avatar/user/nameTag/${selectedUser?.nameTag}`}
+                                    alt={selectedUser?.nameTag}
+                                    sx={{width: 64, height: 64, marginRight: 2}}
+                                />
+                                <Typography variant="h5"
+                                            style={{fontWeight: 'bold'}}>{selectedUser?.nameTag}</Typography>
+                            </Box>
                         </DialogTitle>
-                        <DialogContent
-                            style={{height: '500px', overflowY: 'auto', background: '#f0f0f0', padding: '16px'}}>
-                            <Box display="flex" flexDirection="column" alignItems="stretch" height="100%">
-                                {transactionHistory.map((transaction, index) => {
-                                    const formattedDate = formatTransactionDateHistory(transaction.createdDate);
-                                    const currentUserId = parseInt(localStorage.getItem('USER_ID') || '0');
-                                    const isSent = transaction.senderId === currentUserId;
+                    </DialogTitle>
+                    <DialogContent
+                        style={{height: '500px', overflowY: 'auto', background: '#f0f0f0', padding: '16px'}}>
+                        <Box display="flex" flexDirection="column" alignItems="stretch" height="100%">
+                            {transactionHistory.map((transaction, index) => {
+                                const formattedDate = formatTransactionDateHistory(transaction.createdDate);
+                                const currentUserId = parseInt(localStorage.getItem('USER_ID') || '0');
+                                const isSent = transaction.senderId === currentUserId;
 
-                                    return (
-                                        <motion.div
-                                            key={index}
-                                            initial={{opacity: 0, y: 10}}
-                                            animate={{opacity: 1, y: 0}}
-                                            transition={{duration: 0.2, delay: index * 0.05}}
+                                return (
+                                    <motion.div
+                                        key={index}
+                                        initial={{opacity: 0, y: 10}}
+                                        animate={{opacity: 1, y: 0}}
+                                        transition={{duration: 0.2, delay: index * 0.05}}
+                                    >
+                                        <Box
+                                            mb={1}
+                                            p={1.5}
+                                            borderRadius={12}
+                                            maxWidth="30%" // Increased from 15% to allow for more content
+                                            minWidth="15%" // Set a minimum width
+                                            alignSelf={isSent ? 'flex-end' : 'flex-start'}
+                                            style={{
+                                                background: isSent ? 'rebeccapurple' : '#fff',
+                                                color: isSent ? '#fff' : '#000',
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                                position: 'relative',
+                                                marginLeft: isSent ? 'auto' : '0',
+                                                marginRight: isSent ? '0' : 'auto',
+                                                textAlign: 'center',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                            }}
                                         >
-                                            <Box
-                                                mb={1}
-                                                p={1.5}
-                                                borderRadius={12}
-                                                maxWidth="30%" // Increased from 15% to allow for more content
-                                                minWidth="15%" // Set a minimum width
-                                                alignSelf={isSent ? 'flex-end' : 'flex-start'}
+                                            <Typography variant="caption"
+                                                        style={{fontWeight: 'bold', fontSize: '0.7rem'}}>
+                                                {isSent ? 'Sent' : 'Received'}
+                                            </Typography>
+                                            <Typography variant="body2" style={{
+                                                fontWeight: 'bold',
+                                                fontSize: '0.9rem',
+                                                wordBreak: 'break-word'
+                                            }}>
+                                                {formatCurrency(transaction.amount, {
+                                                    style: 'currency',
+                                                    currency: transaction.currency,
+                                                    currencyDisplay: 'symbol',
+                                                })}
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
                                                 style={{
-                                                    background: isSent ? 'rebeccapurple' : '#fff',
-                                                    color: isSent ? '#fff' : '#000',
-                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                                    position: 'relative',
-                                                    marginLeft: isSent ? 'auto' : '0',
-                                                    marginRight: isSent ? '0' : 'auto',
-                                                    textAlign: 'center',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
+                                                    fontSize: '0.75rem',
+                                                    padding: '4px 0',
+                                                    wordBreak: 'break-word',
                                                 }}
                                             >
-                                                <Typography variant="caption"
-                                                            style={{fontWeight: 'bold', fontSize: '0.7rem'}}>
-                                                    {isSent ? 'Sent' : 'Received'}
-                                                </Typography>
-                                                <Typography variant="body2" style={{
-                                                    fontWeight: 'bold',
-                                                    fontSize: '0.9rem',
-                                                    wordBreak: 'break-word'
-                                                }}>
-                                                    {formatCurrency(transaction.amount, {
-                                                        style: 'currency',
-                                                        currency: transaction.currency,
-                                                        currencyDisplay: 'symbol',
-                                                    })}
-                                                </Typography>
-                                                <Typography
-                                                    variant="caption"
-                                                    style={{
-                                                        fontSize: '0.75rem',
-                                                        padding: '4px 0',
-                                                        wordBreak: 'break-word',
-                                                    }}
-                                                >
-                                                    {transaction.description}
-                                                </Typography>
-                                                <Typography
-                                                    variant="caption"
-                                                    style={{
-                                                        opacity: 0.7,
-                                                        fontSize: '0.7rem',
-                                                        alignSelf: 'flex-end',
-                                                        marginTop: '4px',
-                                                    }}
-                                                >
-                                                    {formattedDate}
-                                                </Typography>
-                                                <div ref={chatEndRef}/>
-                                            </Box>
-                                        </motion.div>
-                                    );
-                                })}
-                            </Box>
-                        </DialogContent>
-                        <DialogActions style={{background: 'white', justifyContent: 'center', padding: '16px'}}>
-                            <PurpleButton onClick={() => optimizedHandleClick(() => setSelectedUser(null))}
-                                          variant="contained"
-                                          disabled={isLoading}>
-                                Close
-                            </PurpleButton>
-                            <PurpleButton onClick={() => {
-                                setTransactionDetails(prevDetails => ({
-                                    ...prevDetails,
-                                    userNameTag: selectedUser.nameTag
-                                }));
-                                setSendFundsDialogState({open: true, fromUserHistory: true});
-                            }} variant="contained" disabled={isLoading}>
-                                Send Funds
-                            </PurpleButton>
-                            <PurpleButton onClick={() => optimizedHandleClick(() => {
-                                setRequestFundsDetails(prevDetails => ({
-                                    ...prevDetails,
-                                    userNameTag: selectedUser.nameTag
-                                }));
-                                setOpenRequestFunds(true);
-                            })} variant="contained" disabled={isLoading}>
-                                Request Funds
-                            </PurpleButton>
-                            {selectedUser && (
-                                <>
-                                    {isFriend ? (
-                                        <Button
-                                            onClick={() => setOpenRemoveFriendDialog(true)}
-                                            variant="contained"
-                                            style={{
-                                                background: 'red',
-                                                color: 'white',
-                                                fontWeight: 'bold',
-                                            }}
-                                        >
-                                            Remove Friend
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            onClick={handleAddFriend}
-                                            variant="contained"
-                                            style={{
-                                                background: 'green',
-                                                color: 'white',
-                                                fontWeight: 'bold',
-                                            }}
-                                        >
-                                            Add Friend
-                                        </Button>
-                                    )}
-                                </>
-                            )}
-                        </DialogActions>
-                    </Dialog>
-                    <Dialog
-                        open={openRemoveFriendDialog}
-                        onClose={() => setOpenRemoveFriendDialog(false)}
-                    >
-                        <DialogTitle>Remove Friend</DialogTitle>
-                        <DialogContent>
-                            <Typography>
-                                Are you sure you want to remove {selectedUser?.nameTag} from your friend list?
-                            </Typography>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpenRemoveFriendDialog(false)} color="secondary">
-                                No
-                            </Button>
-                            <Button onClick={handleRemoveFriend} style={{background: 'red', color: 'white'}}>
-                                Yes
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
+                                                {transaction.description}
+                                            </Typography>
+                                            <Typography
+                                                variant="caption"
+                                                style={{
+                                                    opacity: 0.7,
+                                                    fontSize: '0.7rem',
+                                                    alignSelf: 'flex-end',
+                                                    marginTop: '4px',
+                                                }}
+                                            >
+                                                {formattedDate}
+                                            </Typography>
+                                            <div ref={chatEndRef}/>
+                                        </Box>
+                                    </motion.div>
+                                );
+                            })}
+                        </Box>
+                    </DialogContent>
+                    <DialogActions style={{background: 'white', justifyContent: 'center', padding: '16px'}}>
+                        <PurpleButton onClick={() => optimizedHandleClick(() => setSelectedUser(null))}
+                                      variant="contained"
+                                      disabled={isLoading}>
+                            Close
+                        </PurpleButton>
+                        <PurpleButton onClick={() => {
+                            setTransactionDetails(prevDetails => ({
+                                ...prevDetails,
+                                userNameTag: selectedUser.nameTag
+                            }));
+                            setSendFundsDialogState({open: true, fromUserHistory: true});
+                        }} variant="contained" disabled={isLoading}>
+                            Send Funds
+                        </PurpleButton>
+                        <PurpleButton onClick={() => optimizedHandleClick(() => {
+                            setRequestFundsDetails(prevDetails => ({
+                                ...prevDetails,
+                                userNameTag: selectedUser.nameTag
+                            }));
+                            setOpenRequestFunds(true);
+                        })} variant="contained" disabled={isLoading}>
+                            Request Funds
+                        </PurpleButton>
+                        {selectedUser && (
+                            <>
+                                {isFriend ? (
+                                    <Button
+                                        onClick={() => setOpenRemoveFriendDialog(true)}
+                                        variant="contained"
+                                        style={{
+                                            background: 'red',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                    >
+                                        Remove Friend
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleAddFriend}
+                                        variant="contained"
+                                        style={{
+                                            background: 'green',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                    >
+                                        Add Friend
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </DialogActions>
+                </Dialog>
+                <Dialog
+                    open={openRemoveFriendDialog}
+                    onClose={() => setOpenRemoveFriendDialog(false)}
+                >
+                    <DialogTitle>Remove Friend</DialogTitle>
+                    <DialogContent>
+                        <Typography>
+                            Are you sure you want to remove {selectedUser?.nameTag} from your friend list?
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenRemoveFriendDialog(false)} color="secondary">
+                            No
+                        </Button>
+                        <Button onClick={handleRemoveFriend} style={{background: 'red', color: 'white'}}>
+                            Yes
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-                    <Dialog open={openRequestFunds} onClose={() => setOpenRequestFunds(false)}>
-                        <DialogTitle>Request Funds from {selectedUser?.nameTag}</DialogTitle>
-                        <DialogContent>
-                            <CustomTextField
-                                margin="dense"
-                                name="userNameTag"
-                                label="User"
-                                type="text"
-                                fullWidth
-                                value={selectedUser?.nameTag || ''}
-                                disabled
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="amount"
-                                label="Amount"
-                                type="number"
-                                fullWidth
-                                value={requestFundsDetails.amount}
-                                onChange={handleRequestFundsInputChange}
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="description"
-                                label="Description"
-                                type="text"
-                                fullWidth
-                                value={requestFundsDetails.description}
-                                onChange={handleRequestFundsInputChange}
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="currency"
-                                label="Currency"
-                                select
-                                fullWidth
-                                value={requestFundsDetails.currency}
-                                onChange={handleRequestFundsInputChange}
+                <Dialog open={openRequestFunds} onClose={() => setOpenRequestFunds(false)}>
+                    <DialogTitle>Request Funds from {selectedUser?.nameTag}</DialogTitle>
+                    <DialogContent>
+                        <CustomTextField
+                            margin="dense"
+                            name="userNameTag"
+                            label="User"
+                            type="text"
+                            fullWidth
+                            value={selectedUser?.nameTag || ''}
+                            disabled
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={requestFundsDetails.amount}
+                            onChange={handleRequestFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="description"
+                            label="Description"
+                            type="text"
+                            fullWidth
+                            value={requestFundsDetails.description}
+                            onChange={handleRequestFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="currency"
+                            label="Currency"
+                            select
+                            fullWidth
+                            value={requestFundsDetails.currency}
+                            onChange={handleRequestFundsInputChange}
+                        >
+                            <MenuItem value="USD">USD</MenuItem>
+                            <MenuItem value="BGN">BGN</MenuItem>
+                            <MenuItem value="EUR">EUR</MenuItem>
+                            <MenuItem value="GBP">GBP</MenuItem>
+                            <MenuItem value="JPY">JPY</MenuItem>
+                        </CustomTextField>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenRequestFunds(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleRequestFunds} variant="contained">
+                            Request
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+                <Dialog open={openAddFunds} onClose={handleAddFundsClose}>
+                    <DialogTitle>Add Funds</DialogTitle>
+                    <DialogContent>
+                        {errorMessage && (
+                            <Typography
+                                sx={{
+                                    color: 'error.main',
+                                    fontWeight: 'bold',
+                                    bgcolor: 'error.light',
+                                    p: 1,
+                                    borderRadius: 1,
+                                }}
+                                gutterBottom
                             >
-                                <MenuItem value="USD">USD</MenuItem>
-                                <MenuItem value="BGN">BGN</MenuItem>
-                                <MenuItem value="EUR">EUR</MenuItem>
-                                <MenuItem value="GBP">GBP</MenuItem>
-                                <MenuItem value="JPY">JPY</MenuItem>
-                            </CustomTextField>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpenRequestFunds(false)} color="secondary">
-                                Cancel
-                            </Button>
-                            <PurpleButton onClick={handleRequestFunds} variant="contained">
-                                Request
-                            </PurpleButton>
-                        </DialogActions>
-                    </Dialog>
-                    <Dialog open={openAddFunds} onClose={handleAddFundsClose}>
-                        <DialogTitle>Add Funds</DialogTitle>
-                        <DialogContent>
-                            {errorMessage && (
-                                <Typography
-                                    sx={{
-                                        color: 'error.main',
-                                        fontWeight: 'bold',
-                                        bgcolor: 'error.light',
-                                        p: 1,
-                                        borderRadius: 1,
-                                    }}
-                                    gutterBottom
-                                >
-                                    {errorMessage}
-                                </Typography>
-                            )}
-                            <Box display="flex" alignItems="center" mb={2}>
-                                <CreditCardIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
-                                <Typography variant="h5" component="div">
-                                    Enter Card Details
-                                </Typography>
-                            </Box>
-                            <Box display="flex" alignItems="center" mb={2}>
-                                {renderCardIcon(addFundsDetails.cardNumber)}
-                                <Typography variant="body1" component="div">
-                                    {getCardType(addFundsDetails.cardNumber)}
-                                </Typography>
-                            </Box>
+                                {errorMessage}
+                            </Typography>
+                        )}
+                        <Box display="flex" alignItems="center" mb={2}>
+                            <CreditCardIcon sx={{fontSize: 40, marginRight: 2, color: '#663399'}}/>
+                            <Typography variant="h5" component="div">
+                                Enter Card Details
+                            </Typography>
+                        </Box>
+                        <Box display="flex" alignItems="center" mb={2}>
+                            {renderCardIcon(addFundsDetails.cardNumber)}
+                            <Typography variant="body1" component="div">
+                                {getCardType(addFundsDetails.cardNumber)}
+                            </Typography>
+                        </Box>
+                        <CustomTextField
+                            margin="dense"
+                            name="cardNumber"
+                            label="Card Number"
+                            type="text"
+                            fullWidth
+                            value={addFundsDetails.cardNumber}
+                            onChange={handleAddFundsInputChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="cardOwner"
+                            label="Card Owner"
+                            type="text"
+                            fullWidth
+                            value={addFundsDetails.cardOwner}
+                            onChange={handleAddFundsInputChange}
+                        />
+                        <Box display="flex" justifyContent="space-between">
                             <CustomTextField
                                 margin="dense"
-                                name="cardNumber"
-                                label="Card Number"
+                                name="expiryDate"
+                                label="Expiry Date (MM/YYYY)"
                                 type="text"
                                 fullWidth
-                                value={addFundsDetails.cardNumber}
+                                value={addFundsDetails.rawExpiryDate}
                                 onChange={handleAddFundsInputChange}
+                                sx={{marginRight: 1}}
                             />
                             <CustomTextField
                                 margin="dense"
-                                name="cardOwner"
-                                label="Card Owner"
+                                name="securityCode"
+                                label="CVV"
                                 type="text"
                                 fullWidth
-                                value={addFundsDetails.cardOwner}
+                                value={addFundsDetails.securityCode}
                                 onChange={handleAddFundsInputChange}
+                                sx={{marginLeft: 1}}
                             />
-                            <Box display="flex" justifyContent="space-between">
-                                <CustomTextField
-                                    margin="dense"
-                                    name="expiryDate"
-                                    label="Expiry Date (MM/YYYY)"
-                                    type="text"
-                                    fullWidth
-                                    value={addFundsDetails.rawExpiryDate}
-                                    onChange={handleAddFundsInputChange}
-                                    sx={{marginRight: 1}}
-                                />
-                                <CustomTextField
-                                    margin="dense"
-                                    name="securityCode"
-                                    label="CVV"
-                                    type="text"
-                                    fullWidth
-                                    value={addFundsDetails.securityCode}
-                                    onChange={handleAddFundsInputChange}
-                                    sx={{marginLeft: 1}}
-                                />
-                            </Box>
-                            <CustomTextField
-                                margin="dense"
-                                name="amount"
-                                label="Amount"
-                                type="number"
-                                fullWidth
-                                value={addFundsDetails.amount}
-                                onChange={handleAddFundsInputChange}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleAddFundsClose} color="secondary">
-                                Cancel
-                            </Button>
-                            <PurpleButton onClick={handleAddFundsSubmit} variant="contained">
-                                Add
-                            </PurpleButton>
-                        </DialogActions>
-                    </Dialog>
+                        </Box>
+                        <CustomTextField
+                            margin="dense"
+                            name="amount"
+                            label="Amount"
+                            type="number"
+                            fullWidth
+                            value={addFundsDetails.amount}
+                            onChange={handleAddFundsInputChange}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleAddFundsClose} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleAddFundsSubmit} variant="contained">
+                            Add
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
 
-                    <Dialog open={openBudget} onClose={() => setOpenBudget(false)} maxWidth="md" fullWidth>
-                        <DialogTitle>Budget Management</DialogTitle>
-                        <DialogContent>
-                            {budgets.length === 0 ? (
+                <Dialog open={openBudget} onClose={() => setOpenBudget(false)} maxWidth="md" fullWidth>
+                    <DialogTitle>Budget Management</DialogTitle>
+                    <DialogContent>
+                        {budgets.length === 0 ? (
+                            <Typography variant="body1" gutterBottom>
+                                No active budgets
+                            </Typography>
+                        ) : (
+                            <>
                                 <Typography variant="body1" gutterBottom>
-                                    No active budgets
+                                    You have {budgets.length} active budget(s)
                                 </Typography>
-                            ) : (
-                                <>
-                                    <Typography variant="body1" gutterBottom>
-                                        You have {budgets.length} active budget(s)
-                                    </Typography>
-                                    <Box textAlign="center" mt={2}>
-                                        <PurpleButton onClick={handleViewBudget} variant="contained">
-                                            View Budget
-                                        </PurpleButton>
-                                    </Box>
-                                </>
-                            )}
-                            {!showCreateBudget ? (
                                 <Box textAlign="center" mt={2}>
-                                    <PurpleButton onClick={() => setShowCreateBudget(true)} variant="contained">
-                                        Create New Budget
+                                    <PurpleButton onClick={handleViewBudget} variant="contained">
+                                        View Budget
                                     </PurpleButton>
                                 </Box>
-                            ) : (
-                                <>
-                                    <Typography variant="h6" gutterBottom>
-                                        Create New Budget
-                                    </Typography>
-                                    {/* Budget creation fields */}
-                                    <CustomTextField
-                                        margin="dense"
-                                        name="budget"
-                                        label="Budget Amount"
-                                        type="number"
-                                        fullWidth
-                                        value={budgetDetails.budget}
-                                        onChange={handleBudgetInputChange}
-                                    />
-                                    <CustomTextField
-                                        margin="dense"
-                                        name="startDate"
-                                        label="Start Date"
-                                        type="date"
-                                        fullWidth
-                                        InputLabelProps={{
-                                            shrink: true,
-                                        }}
-                                        value={budgetDetails.startDate}
-                                        onChange={handleBudgetInputChange}
-                                    />
-                                    <CustomTextField
-                                        margin="dense"
-                                        name="endDate"
-                                        label="End Date"
-                                        type="date"
-                                        fullWidth
-                                        InputLabelProps={{
-                                            shrink: true,
-                                        }}
-                                        value={budgetDetails.endDate}
-                                        onChange={handleBudgetInputChange}
-                                    />
-                                </>
-                            )}
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpenBudget(false)} color="secondary">
-                                Cancel
-                            </Button>
-                            {showCreateBudget && (
-                                <PurpleButton onClick={handleCreateBudget} variant="contained">
-                                    Create Budget
+                            </>
+                        )}
+                        {!showCreateBudget ? (
+                            <Box textAlign="center" mt={2}>
+                                <PurpleButton onClick={() => setShowCreateBudget(true)} variant="contained">
+                                    Create New Budget
                                 </PurpleButton>
-                            )}
-                        </DialogActions>
-                    </Dialog>
-
-                    <Dialog open={viewBudget} onClose={() => setViewBudget(false)} maxWidth="md" fullWidth>
-                        <DialogTitle style={{display: 'flex', alignItems: 'center'}}>
-                            <AccountBalanceIcon style={{marginRight: '8px', color: 'rebeccapurple'}}/>
-                            Active Budget
-                        </DialogTitle>
-                        <DialogContent>
-                            {budgets.length > 0 && (
-                                <>
-                                    <Typography variant="h6" gutterBottom
-                                                style={{textAlign: 'center', marginTop: '16px'}}>
-                                        {formatDateWithoutTime(budgets[0]?.startDate)} - {formatDateWithoutTime(budgets[0]?.endDate)}
-                                    </Typography>
-                                    <div style={{
-                                        height: '400px',
-                                        width: '100%',
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center'
-                                    }}>
-                                        <Doughnut
-                                            data={{
-                                                labels: ['Money Spent', 'Money Left'],
-                                                datasets: [{
-                                                    data: [totalSpent, budgets[0]?.budget - totalSpent],
-                                                    backgroundColor: ['#DAA520', '#663399'],  // Rebeccapurple for left, Goldenrod for spent
-                                                    hoverBackgroundColor: ['#DAA520', '#663399']  // Same colors for hover effect
-                                                }]
-                                            }}
-                                            options={{
-                                                responsive: true,
-                                                maintainAspectRatio: false,
-                                                plugins: {
-                                                    legend: {
-                                                        position: 'bottom',
-                                                    },
-                                                    tooltip: {
-                                                        callbacks: {
-                                                            label: function (context) {
-                                                                let label = context.label || '';
-                                                                if (label) {
-                                                                    label += ': ';
-                                                                }
-                                                                if (context.parsed !== null) {
-                                                                    label += formatCurrency(context.parsed);
-                                                                }
-                                                                return label;
-                                                            }
-                                                        }
-                                                    },
-                                                    title: {
-                                                        display: true,
-                                                        text: `Budget Overview: ${formatCurrency(budgets[0]?.budget)}`,
-                                                        font: {
-                                                            size: 16
-                                                        }
-                                                    },
-                                                    doughnutLabels: true
-                                                },
-                                            }}
-                                            plugins={[doughnutLabelsPlugin]}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setViewBudget(false)} color="secondary">
-                                Close
-                            </Button>
-                            <Button onClick={handleDeleteBudget} color="error">
-                                Delete
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-
-                    <Dialog open={openReport} onClose={() => setOpenReport(false)}>
-                        <DialogTitle>Generate Transaction Report</DialogTitle>
-                        <DialogContent>
-                            <CustomTextField
-                                margin="dense"
-                                name="startDate"
-                                label="Start Date"
-                                type="date"
-                                fullWidth
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                value={reportDates.startDate}
-                                onChange={handleReportDatesChange}
-                            />
-                            <CustomTextField
-                                margin="dense"
-                                name="endDate"
-                                label="End Date"
-                                type="date"
-                                fullWidth
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                value={reportDates.endDate}
-                                onChange={handleReportDatesChange}
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpenReport(false)} color="secondary">
-                                Cancel
-                            </Button>
-                            <PurpleButton onClick={handleDownloadReport} variant="contained">
-                                Download PDF
+                            </Box>
+                        ) : (
+                            <>
+                                <Typography variant="h6" gutterBottom>
+                                    Create New Budget
+                                </Typography>
+                                {/* Budget creation fields */}
+                                <CustomTextField
+                                    margin="dense"
+                                    name="budget"
+                                    label="Budget Amount"
+                                    type="number"
+                                    fullWidth
+                                    value={budgetDetails.budget}
+                                    onChange={handleBudgetInputChange}
+                                />
+                                <CustomTextField
+                                    margin="dense"
+                                    name="startDate"
+                                    label="Start Date"
+                                    type="date"
+                                    fullWidth
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    value={budgetDetails.startDate}
+                                    onChange={handleBudgetInputChange}
+                                />
+                                <CustomTextField
+                                    margin="dense"
+                                    name="endDate"
+                                    label="End Date"
+                                    type="date"
+                                    fullWidth
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    value={budgetDetails.endDate}
+                                    onChange={handleBudgetInputChange}
+                                />
+                            </>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenBudget(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        {showCreateBudget && (
+                            <PurpleButton onClick={handleCreateBudget} variant="contained">
+                                Create Budget
                             </PurpleButton>
-                        </DialogActions>
-                    </Dialog>
+                        )}
+                    </DialogActions>
+                </Dialog>
 
-                    <Dialog open={selectedTransaction !== null} onClose={() => setSelectedTransaction(null)}>
-                        <DialogTitle>Transaction History</DialogTitle>
-                        <DialogContent>
-                            {transactionSnapshots.map((snapshot, index) => (
-                                <Box key={index} mb={2}>
-                                    <Typography variant="h6">Transaction ID: {snapshot.globalId.cdoId}</Typography>
-                                    <Typography>Created Date: {snapshot.commitMetadata.commitDateInstant}</Typography>
-                                    <Typography>Author: {snapshot.commitMetadata.author}</Typography>
-                                    <Typography>Transaction Type: {snapshot.state.transactionType}</Typography>
-                                    <Typography>Amount: {snapshot.state.amount}</Typography>
-                                    <Typography>Currency: {snapshot.state.currency}</Typography>
-                                    <Typography>Status: {snapshot.state.transactionStatus}</Typography>
-                                </Box>
-                            ))}
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setSelectedTransaction(null)} color="secondary">
-                                Close
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                    <Snackbar
-                        open={createBudgetSuccessMessage}
-                        autoHideDuration={3000}
-                        onClose={() => setCreateBudgetSuccessMessage(false)}
-                        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                    >
-                        <Alert onClose={() => setCreateBudgetSuccessMessage(false)} severity="success"
-                               sx={{width: '100%'}}>
-                            Successfully created budget!
-                        </Alert>
-                    </Snackbar>
-                    <Snackbar
-                        open={addFundsSuccessMessage}
-                        autoHideDuration={2000}
-                        onClose={handleSnackbarClose}
-                        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                    >
-                        <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
-                            Successfully added funds!
-                        </Alert>
-                    </Snackbar>
-                    <Snackbar
-                        open={sendFundsSuccessMessage}
-                        autoHideDuration={2000}
-                        onClose={handleSnackbarClose}
-                        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                    >
-                        <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
-                            Successfully sent funds!
-                        </Alert>
-                    </Snackbar>
-                    <Snackbar
-                        open={requestFundsSuccessMessage}
-                        autoHideDuration={2000}
-                        onClose={handleSnackbarClose}
-                        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                    >
-                        <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
-                            Successfully requested funds!
-                        </Alert>
-                    </Snackbar>
-                </Container>
-            </ThemeProvider>
-        );
-    };
+                <Dialog open={viewBudget} onClose={() => setViewBudget(false)} maxWidth="md" fullWidth>
+                    <DialogTitle style={{display: 'flex', alignItems: 'center'}}>
+                        <AccountBalanceIcon style={{marginRight: '8px', color: 'rebeccapurple'}}/>
+                        Active Budget
+                    </DialogTitle>
+                    <DialogContent>
+                        {budgets.length > 0 && (
+                            <>
+                                <Typography variant="h6" gutterBottom
+                                            style={{textAlign: 'center', marginTop: '16px'}}>
+                                    {formatDateWithoutTime(budgets[0]?.startDate)} - {formatDateWithoutTime(budgets[0]?.endDate)}
+                                </Typography>
+                                <div style={{
+                                    height: '400px',
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
+                                }}>
+                                    <Doughnut
+                                        data={{
+                                            labels: ['Money Spent', 'Money Left'],
+                                            datasets: [{
+                                                data: [totalSpent, budgets[0]?.budget - totalSpent],
+                                                backgroundColor: ['#DAA520', '#663399'],  // Rebeccapurple for left, Goldenrod for spent
+                                                hoverBackgroundColor: ['#DAA520', '#663399']  // Same colors for hover effect
+                                            }]
+                                        }}
+                                        options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: {
+                                                    position: 'bottom',
+                                                },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: function (context) {
+                                                            let label = context.label || '';
+                                                            if (label) {
+                                                                label += ': ';
+                                                            }
+                                                            if (context.parsed !== null) {
+                                                                label += formatCurrency(context.parsed);
+                                                            }
+                                                            return label;
+                                                        }
+                                                    }
+                                                },
+                                                title: {
+                                                    display: true,
+                                                    text: `Budget Overview: ${formatCurrency(budgets[0]?.budget)}`,
+                                                    font: {
+                                                        size: 16
+                                                    }
+                                                },
+                                                doughnutLabels: true
+                                            },
+                                        }}
+                                        plugins={[doughnutLabelsPlugin]}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setViewBudget(false)} color="secondary">
+                            Close
+                        </Button>
+                        <Button onClick={handleDeleteBudget} color="error">
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-    export default MainPage;
+                <Dialog open={openReport} onClose={() => setOpenReport(false)}>
+                    <DialogTitle>Generate Transaction Report</DialogTitle>
+                    <DialogContent>
+                        <CustomTextField
+                            margin="dense"
+                            name="startDate"
+                            label="Start Date"
+                            type="date"
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            value={reportDates.startDate}
+                            onChange={handleReportDatesChange}
+                        />
+                        <CustomTextField
+                            margin="dense"
+                            name="endDate"
+                            label="End Date"
+                            type="date"
+                            fullWidth
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            value={reportDates.endDate}
+                            onChange={handleReportDatesChange}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpenReport(false)} color="secondary">
+                            Cancel
+                        </Button>
+                        <PurpleButton onClick={handleDownloadReport} variant="contained">
+                            Download PDF
+                        </PurpleButton>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={selectedTransaction !== null} onClose={() => setSelectedTransaction(null)}>
+                    <DialogTitle>Transaction History</DialogTitle>
+                    <DialogContent>
+                        {transactionSnapshots.map((snapshot, index) => (
+                            <Box key={index} mb={2}>
+                                <Typography variant="h6">Transaction ID: {snapshot.globalId.cdoId}</Typography>
+                                <Typography>Created Date: {snapshot.commitMetadata.commitDateInstant}</Typography>
+                                <Typography>Author: {snapshot.commitMetadata.author}</Typography>
+                                <Typography>Transaction Type: {snapshot.state.transactionType}</Typography>
+                                <Typography>Amount: {snapshot.state.amount}</Typography>
+                                <Typography>Currency: {snapshot.state.currency}</Typography>
+                                <Typography>Status: {snapshot.state.transactionStatus}</Typography>
+                            </Box>
+                        ))}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSelectedTransaction(null)} color="secondary">
+                            Close
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+                <Snackbar
+                    open={createBudgetSuccessMessage}
+                    autoHideDuration={3000}
+                    onClose={() => setCreateBudgetSuccessMessage(false)}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={() => setCreateBudgetSuccessMessage(false)} severity="success"
+                           sx={{width: '100%'}}>
+                        Successfully created budget!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={addFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully added funds!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={sendFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully sent funds!
+                    </Alert>
+                </Snackbar>
+                <Snackbar
+                    open={requestFundsSuccessMessage}
+                    autoHideDuration={2000}
+                    onClose={handleSnackbarClose}
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Alert onClose={handleSnackbarClose} severity="success" sx={{width: '100%'}}>
+                        Successfully requested funds!
+                    </Alert>
+                </Snackbar>
+            </Container>
+        </ThemeProvider>
+    );
+};
+
+export default MainPage;

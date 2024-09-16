@@ -165,7 +165,7 @@ public class UserResource {
         try {
             var user = userService.getUserById(userId);
             var filename = user.getAvatar();
-            if(filename == null){
+            if (filename == null) {
                 filename = "shield.png";
             }
 

@@ -64,9 +64,9 @@ public class TransactionService {
         log.debug("Sending Money to user with nameTag: {} from user with id: {}", transactionDTO.getRecipientNameTag(), transactionDTO.getSenderId());
         var sender = userService.getUserById(transactionDTO.getSenderId());
         var senderBudgetingFlag = sender.getIsBudgetingEnabled();
-        var recipient = userService.getUserByNameTag(transactionDTO.getRecipientNameTag());
-
-        transactionDTO.setRecipientId(recipient.getId());
+        var recipient = transactionDTO.getRecipientNameTag() == null
+                ? userService.getUserById(transactionDTO.getRecipientId())
+                : userService.getUserByNameTag(transactionDTO.getRecipientNameTag());
 
         var senderBalance = transactionServiceUtil.findAccountBalance(sender.getId(), transactionDTO.getCurrency());
         var transferAmount = transactionDTO.getAmount();
@@ -174,12 +174,12 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionDTO cancelRequestedFunds(Long transactionId, Long currentUserId){
+    public TransactionDTO cancelRequestedFunds(Long transactionId, Long currentUserId) {
         log.debug("User with ID:{} is cancelling the requested funds", currentUserId);
 
         var transaction = transactionRepository.findById(transactionId).orElseThrow(() -> new BadRequestException("Transaction not found!"));
 
-        if(!transaction.getRecipient().getId().equals(currentUserId)){
+        if (!transaction.getRecipient().getId().equals(currentUserId)) {
             throw new BadRequestException("You can cancel only Transaction where the Funds are requested FROM YOU!");
         }
 
@@ -229,7 +229,7 @@ public class TransactionService {
      * @param id the id of the supposed Transaction.
      * @return the TransactionDTO if it exists.
      */
-    public TransactionDTO getTransactionById(Long id){
+    public TransactionDTO getTransactionById(Long id) {
         var fetchedTransaction = transactionRepository.findById(id).orElseThrow(() -> new BadRequestException("Transaction not found!"));
         return transactionMapper.toDTO(fetchedTransaction);
     }

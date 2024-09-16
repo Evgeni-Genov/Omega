@@ -112,7 +112,7 @@ public class TransactionResource {
     @PatchMapping("/transaction/cancel/{transactionId}")
     @Operation(summary = "Cancel Transaction")
     public ResponseEntity<TransactionDTO> cancelTransaction(@PathVariable Long transactionId,
-                                                            Principal principal){
+                                                            Principal principal) {
         var currentUserId = securityUtils.extractCurrentUserIdFromPrincipal(principal);
         log.debug("User with ID: {} is trying to cancel a Transaction !", currentUserId);
         var cancelledTransaction = transactionService.cancelRequestedFunds(transactionId, currentUserId);

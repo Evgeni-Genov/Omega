@@ -610,6 +610,7 @@ public class UserService {
         userRepository.save(user);
         userRepository.save(friend);
     }
+
     /**
      * Checks if two users are friends.
      * <p>
