@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Container} from '@mui/material';
+import {Container} from '@mui/material';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import axiosInstance from "../Config/AxiosConfiguration.ts";
 import {useNavigate} from "react-router-dom";
@@ -24,7 +24,7 @@ const MainPage = () => {
                     throw new Error('User ID not found');
                 }
                 const accountResponse = await axiosInstance.get(`/api/account-balance/user/${userId}`);
-                const accountData = accountResponse.data.length > 0 ? accountResponse.data[0] : { balance: 0 };
+                const accountData = accountResponse.data.length > 0 ? accountResponse.data[0] : {balance: 0};
                 setAccountBalance(accountData.balance);
             } catch (error) {
                 console.error('Failed to fetch account data:', error);
@@ -80,7 +80,7 @@ const MainPage = () => {
     return (
         <ThemeProvider theme={theme}>
             <Container component="main" maxWidth="md">
-                <AccountBalance balance={accountBalance} />
+                <AccountBalance balance={accountBalance}/>
                 {/*<TransactionList transactions={transactions} />*/}
                 {/*<SendFundsDialog />*/}
                 {/*<AddFundsDialog />*/}
