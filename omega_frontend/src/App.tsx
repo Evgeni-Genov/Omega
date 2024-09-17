@@ -5,8 +5,8 @@ import './App.css';
 import SignIn from "./assets/Components/Login/SignIn.tsx";
 import SignUp from "./assets/Components/Registration/SignUp.tsx";
 import ResetPassword from "./assets/Components/Login/ResetPassword.tsx";
-import MainPage from "./assets/Components/Main/MainPage.tsx";
 import {useState} from "react";
+import MainPage from "./assets/Components/Main/MainPage.tsx";
 
 function App() {
     const [loggedIn, setLoggedIn] = useState(false);
