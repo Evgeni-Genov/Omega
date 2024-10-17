@@ -229,6 +229,7 @@ const MainPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [sendFundsDialogState, setSendFundsDialogState] = useState({open: false, fromUserHistory: false});
     const {data: avatarUrl, isLoading: avatarLoading, error: avatarError} = useAvatar(userId);
+    const [sendFundsErrorVisible, setSendFundsErrorVisible] = useState(false);
     const [requestFundsDetails, setRequestFundsDetails] = useState({
         amount: '',
         currency: 'USD',
@@ -499,6 +500,7 @@ const MainPage = () => {
             const userId = parseInt(localStorage.getItem('USER_ID') || '', 10);
             const response = await axiosInstance.post('/api/transaction/send-funds', {
                 ...transactionDetails,
+                recipientNameTag: transactionDetails.userNameTag,
                 senderId: userId,
                 transactionType: 'TRANSFER',
             }, {
@@ -555,8 +557,22 @@ const MainPage = () => {
     };
 
     const handleSendFundsDialog = async () => {
-        await handleSendFunds(transactionDetails);
-        setSendFundsDialogState({open: false, fromUserHistory: false});
+        try {
+            await handleSendFunds(transactionDetails);
+            setSendFundsDialogState({ open: false, fromUserHistory: false });
+        } catch (error) {
+            console.error('Failed to send funds:', error);
+            if (error.response && error.response.status === 400) {
+                setErrorMessage(error.response.data.message);
+                setErrorColor('error');
+            } else {
+                setErrorMessage('Internal Server Error. Please try again later.');
+            }
+            setSendFundsErrorVisible(true);
+            setTimeout(() => {
+                setSendFundsErrorVisible(false);
+            }, 3000);
+        }
     };
 
     const handleAddFundsSubmit = async () => {

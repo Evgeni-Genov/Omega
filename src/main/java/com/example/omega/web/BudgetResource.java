@@ -80,5 +80,4 @@ public class BudgetResource {
         return ResponseEntity.ok(totalSpent);
     }
 
-
 }

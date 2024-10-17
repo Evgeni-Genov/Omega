@@ -47,19 +47,9 @@ public class MailService {
         log.debug("Sending email to: {} with verification code {}.", recipient, verificationCode);
 
         var emailContent = new StringBuilder();
-        setEmailContent(user, emailContent, verificationCode);
+        setEmailContentForVerificationCode(user, emailContent, verificationCode);
 
         sendEmail(recipient, subject, emailContent.toString());
-    }
-
-    private static void setEmailContent(User user, StringBuilder emailContent, String verificationCode) {
-        emailContent.append("Dear ").append(user.getUsername()).append(",\n\n");
-        emailContent.append("To complete your login please fill in the following verification code:\n\n");
-        emailContent.append("Verification Code: ").append(verificationCode).append("\n\n");
-        emailContent.append("Please enter this code in the verification screen to login.\n\n");
-        emailContent.append("If you did not request this verification code, please ignore this email.\n\n");
-        emailContent.append("Best regards,\n");
-        emailContent.append("The Omega Team");
     }
 
     /**
@@ -113,6 +103,25 @@ public class MailService {
         } catch (MessagingException e) {
             throw new BadRequestException(e.getMessage());
         }
+    }
+
+    /**
+     * Sets the email content for a verification code email.
+     * The email content includes a personalized greeting with the user's username,
+     * the verification code, and instructions for completing the login process.
+     *
+     * @param user The {@link User} object representing the recipient of the email.
+     * @param emailContent A {@link StringBuilder} object used to build the email content.
+     * @param verificationCode The verification code to be included in the email.
+     */
+    private static void setEmailContentForVerificationCode(User user, StringBuilder emailContent, String verificationCode) {
+        emailContent.append("Dear ").append(user.getUsername()).append(",\n\n");
+        emailContent.append("To complete your login please fill in the following verification code:\n\n");
+        emailContent.append("Verification Code: ").append(verificationCode).append("\n\n");
+        emailContent.append("Please enter this code in the verification screen to login.\n\n");
+        emailContent.append("If you did not request this verification code, please ignore this email.\n\n");
+        emailContent.append("Best regards,\n");
+        emailContent.append("The Omega Team");
     }
 }
 

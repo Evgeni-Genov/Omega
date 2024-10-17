@@ -17,6 +17,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final UserRepository userRepository;
     private final LoginAttemptService loginAttemptService;
 
+    /**
+     * Loads a user's details by their username for authentication purposes.
+     * This method checks if the user is blocked due to failed login attempts and throws an exception if so.
+     * If the user is found in the repository, their details are returned; otherwise, an exception is thrown.
+     *
+     * @param username The username of the user to be loaded.
+     * @return A {@link UserDetails} object containing the user's information.
+     * @throws CustomAuthenticationException If the user is blocked or if the username is not found.
+     */
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws CustomAuthenticationException {

@@ -68,6 +68,8 @@ public class TransactionService {
                 ? userService.getUserById(transactionDTO.getRecipientId())
                 : userService.getUserByNameTag(transactionDTO.getRecipientNameTag());
 
+        transactionDTO.setRecipientId(recipient.getId());
+
         var senderBalance = transactionServiceUtil.findAccountBalance(sender.getId(), transactionDTO.getCurrency());
         var transferAmount = transactionDTO.getAmount();
 
@@ -146,6 +148,17 @@ public class TransactionService {
         return saveTransaction(transactionDTO);
     }
 
+    /**
+     * Requests funds from a recipient to a sender.
+     * This method checks if the recipient exists, ensures the sender and recipient are not the same user,
+     * and validates the transaction details before marking it as a pending transfer.
+     * If no currency is provided, USD is set by default.
+     *
+     * @param transactionDTO The {@link TransactionDTO} containing the transaction details.
+     * @return The {@link TransactionDTO} of the newly created transaction.
+     * @throws BadRequestException If the recipient is not found or if the sender and recipient are the same user.
+     * @throws IllegalArgumentException If the transaction amount is invalid (null or <= 0).
+     */
     @Transactional
     public TransactionDTO requestFunds(TransactionDTO transactionDTO) {
         log.debug("Requesting funds from user with nameTag: {} to user with ID: {}", transactionDTO.getRecipientNameTag(), transactionDTO.getSenderId());
@@ -173,6 +186,17 @@ public class TransactionService {
         return saveTransaction(transactionDTO);
     }
 
+    /**
+     * Cancels a requested fund transaction.
+     * Only the recipient of the transaction can cancel it, and it must be in a pending state.
+     * This method sets the transaction amount to zero, marks it as cancelled, and updates its description.
+     *
+     * @param transactionId The ID of the transaction to be cancelled.
+     * @param currentUserId The ID of the user requesting the cancellation (must be the recipient of the transaction).
+     * @return The {@link TransactionDTO} of the cancelled transaction.
+     * @throws BadRequestException If the transaction is not found, the user is not the recipient,
+     *                             or the transaction is not in a pending state.
+     */
     @Transactional
     public TransactionDTO cancelRequestedFunds(Long transactionId, Long currentUserId) {
         log.debug("User with ID:{} is cancelling the requested funds", currentUserId);
@@ -234,6 +258,13 @@ public class TransactionService {
         return transactionMapper.toDTO(fetchedTransaction);
     }
 
+    /**
+     * Retrieves a list of pending fund requests for a specific user.
+     * This method fetches transactions where the user is the recipient and the transaction status is pending.
+     *
+     * @param userId The ID of the user for whom to retrieve pending fund requests.
+     * @return A list of {@link TransactionDTO} objects representing the pending fund requests.
+     */
     public List<TransactionDTO> getPendingFundRequestsForUser(Long userId) {
         var pendingFundRequests = transactionRepository.findPendingFundRequestsForUser(userId);
         return pendingFundRequests.stream()

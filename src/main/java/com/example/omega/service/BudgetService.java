@@ -113,6 +113,14 @@ public class BudgetService {
                 .orElseThrow(() -> new BadRequestException("Budget not found"));
     }
 
+    /**
+     * Calculates the remaining budget amount for a specific user.
+     * It subtracts the total amount spent by the user within the current budget's time range
+     * from the user's current budget.
+     *
+     * @param userId The ID of the user for whom to calculate the remaining budget.
+     * @return The remaining budget amount as a {@link BigDecimal}.
+     */
     public BigDecimal calculateRemainingBudgetAmount(Long userId) {
         log.debug("Calculating remaining budget amount for user with id: {}", userId);
 

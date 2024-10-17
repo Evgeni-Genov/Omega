@@ -1,7 +1,7 @@
 spring:
-#  Self-Signed Certificate is created, but we need a real certificate
-#  profiles:
-#    active: tls
+  #  Self-Signed Certificate is created, but we need a real certificate
+  #  profiles:
+  #    active: tls
   cors:
     allowed-origins: '*'
     allowed-methods: '*'
@@ -40,7 +40,6 @@ spring:
   web:
     resources:
       static-locations: classpath:/userProfiles/
-
 
 logging:
   level:

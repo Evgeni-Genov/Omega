@@ -80,7 +80,6 @@ public class TransactionResource {
         return ResponseEntity.ok().body(createdCreditCardDTO);
     }
 
-
     @GetMapping("/transactions")
     public ResponseEntity<Map<String, Object>> getAllTransactionsBetweenTwoUsers(Principal principal, Pageable pageable,
                                                                                  @RequestParam("userId") Long userId,
