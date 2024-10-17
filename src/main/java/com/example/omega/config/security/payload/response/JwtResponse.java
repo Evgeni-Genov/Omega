@@ -17,12 +17,14 @@ public class JwtResponse {
     private Long id;
     private String username;
     private List<String> roles;
+    private boolean twoFactorAuthentication;
 
-    public JwtResponse(String accessToken, String refreshToken, Long id, String username, List<String> roles) {
+    public JwtResponse(String accessToken, String refreshToken, Long id, String username, List<String> roles, boolean twoFactorAuthentication) {
         this.token = accessToken;
         this.refreshToken = refreshToken;
         this.id = id;
         this.username = username;
         this.roles = roles;
+        this.twoFactorAuthentication = twoFactorAuthentication;
     }
 }

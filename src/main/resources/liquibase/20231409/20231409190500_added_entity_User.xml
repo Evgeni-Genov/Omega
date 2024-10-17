@@ -8,30 +8,30 @@
     <changeSet id="create-user-table" author="admin">
         <createTable tableName="user">
             <column name="id" type="BIGINT">
-                <constraints primaryKey="true" nullable="false" />
+                <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="username" type="varchar(255)">
-                <constraints unique="true" nullable="false" />
+                <constraints unique="true" nullable="false"/>
             </column>
-            <column name="email" type="varchar(255)" />
-            <column name="first_name" type="varchar(255)" />
-            <column name="last_name" type="varchar(255)" />
-            <column name="password" type="varchar(255)" />
-            <column name="name_tag" type="varchar(255)" />
-            <column name="phone_number" type="varchar(255)" />
-            <column name="address" type="varchar(255)" />
+            <column name="email" type="varchar(255)"/>
+            <column name="first_name" type="varchar(255)"/>
+            <column name="last_name" type="varchar(255)"/>
+            <column name="password" type="varchar(255)"/>
+            <column name="name_tag" type="varchar(255)"/>
+            <column name="phone_number" type="varchar(255)"/>
+            <column name="address" type="varchar(255)"/>
             <column name="role" type="varchar(255)"/>
-            <column name="town_of_birth" type="varchar(255)" />
-            <column name="country_of_birth" type="varchar(255)" />
-            <column name="two_factor_authentication" type="BOOLEAN" />
+            <column name="town_of_birth" type="varchar(255)"/>
+            <column name="country_of_birth" type="varchar(255)"/>
+            <column name="two_factor_authentication" type="BOOLEAN"/>
             <column name="locked" type="BOOLEAN"/>
             <column name="enabled" type="BOOLEAN"/>
 
             <!-- Auditing columns -->
-            <column name="created_by" type="varchar(255)" />
-            <column name="created_date" type="timestamp" />
-            <column name="last_modified_by" type="varchar(255)" />
-            <column name="last_modified_date" type="timestamp" />
+            <column name="created_by" type="varchar(255)"/>
+            <column name="created_date" type="timestamp"/>
+            <column name="last_modified_by" type="varchar(255)"/>
+            <column name="last_modified_date" type="timestamp"/>
         </createTable>
     </changeSet>
 
@@ -41,14 +41,100 @@
                         incrementBy="1"/>
     </changeSet>
 
+    <!-- Manually refactoring database -->
+    <changeSet id="add-column-email_verification_token-to-table" author="egenov">
+        <comment>Add new column email verification token to table user</comment>
+        <addColumn tableName="user">
+            <column name="email_verification_token" type="varchar(255)">
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add-column-two_factor_secret-to-table" author="egenov">
+        <comment>Add new column two factor secret to table user</comment>
+        <addColumn tableName="user">
+            <column name="two_factor_secret"
+                    type="varchar(255)">
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add-column-avatar-to-table" author="egenov">
+        <comment>Add new column avatar to table user</comment>
+        <addColumn tableName="user">
+            <column name="avatar"
+                    type="varchar(255)">
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add-column-is_budgeting_enabled-to-user" author="egenov">
+        <comment>Add new column isBudgetingEnabled to table user</comment>
+        <addColumn tableName="user">
+            <column name="is_budgeting_enabled" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add-verification_code_id-column-to-user" author="egenov">
+        <addColumn tableName="user">
+            <column name="verification_code_id" type="BIGINT"/>
+        </addColumn>
+    </changeSet>
+
     <!-- Add foreign key constraints here -->
 
-    <changeSet id="add-verification-code-foreign-key" author="egenov">
+    <changeSet id="add-verification-code-foreign-key-to-user" author="egenov">
         <addForeignKeyConstraint baseTableName="user"
-                                 constraintName="fk_verification_code_user_id"
+                                 constraintName="fk_user_verification_code"
                                  referencedTableName="verification_code"
                                  referencedColumnNames="id"
                                  baseColumnNames="verification_code_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="add-password-reset-link-foreign-key" author="egenov">
+        <addForeignKeyConstraint baseTableName="user"
+                                 constraintName="fk_password_reset_link_user_id"
+                                 referencedTableName="password_reset_link"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="password_reset_link_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- Add the ManyToMany Relationships -->
+
+    <changeSet id="create-user-friends-list-table" author="egenov">
+        <createTable tableName="user_friends_list">
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="friend_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-primary-key" author="egenov">
+        <addPrimaryKey tableName="user_friends_list" columnNames="user_id, friend_id"/>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-foreign-key-user" author="egenov">
+        <addForeignKeyConstraint baseTableName="user_friends_list"
+                                 constraintName="fk_user_friends_list_user_id"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="user_id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="add-user-friends-list-foreign-key-friend" author="egenov">
+        <addForeignKeyConstraint baseTableName="user_friends_list"
+                                 constraintName="fk_user_friends_list_friend_id"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 baseColumnNames="friend_id"
                                  onDelete="CASCADE"/>
     </changeSet>
 

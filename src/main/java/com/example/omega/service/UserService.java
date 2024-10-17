@@ -4,19 +4,30 @@ import com.example.omega.domain.User;
 import com.example.omega.domain.enumeration.Roles;
 import com.example.omega.mapper.UserMapper;
 import com.example.omega.repository.UserRepository;
+import com.example.omega.service.dto.FriendDTO;
 import com.example.omega.service.dto.UserDTO;
 import com.example.omega.service.exception.BadRequestException;
+import com.example.omega.service.util.PasswordResetLinkService;
 import com.example.omega.service.util.UserServiceUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Objects;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.example.omega.service.util.Constants.USER_PROFILE_DIR;
 
 
 @Slf4j
@@ -26,14 +37,11 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-
     private final UserMapper userMapper;
-
     private final BCryptPasswordEncoder passwordEncoder;
-
     private final UserServiceUtil userServiceUtil;
-
     private final VerificationCodeService verificationCodeService;
+    private final PasswordResetLinkService passwordResetLinkService;
 
     /**
      * Creates a new user.
@@ -42,24 +50,64 @@ public class UserService {
      * @return userCreateDTO           The created user.
      * @throws BadRequestException If the user is invalid or the username or email is already taken.
      */
-    //TODO: email code verification
     public UserDTO createUser(UserDTO userCreateDTO) {
         log.debug("Validating the User data!");
         var user = userMapper.toEntity(userCreateDTO);
 
         userServiceUtil.validateUserNotNull(user);
+        userServiceUtil.validateEmailNotRegistered(user.getEmail());
         userServiceUtil.validateUsernameAndPasswordNotEmpty(user);
         userServiceUtil.validateUsernameNotTaken(user.getUsername());
-        userServiceUtil.validateEmailNotRegistered(user.getEmail());
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
-        user.setRole(Roles.ROLE_USER);
-        user.setLocked(false);
+        configureNewUser(user);
 
         var savedUser = userRepository.save(user);
         log.debug("User created successfully: {}", user);
         return userMapper.toDTO(savedUser);
+    }
+
+    /**
+     * Checks if a user is enabled based on their username.
+     *
+     * @param username The username of the user to check.
+     * @return boolean True if the user is enabled, false otherwise.
+     * @throws BadRequestException if no user is found with the given username.
+     */
+    public boolean isUserEnabled(String username) {
+        var user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            throw new BadRequestException(String.format("User with username: %s is not found", username));
+        }
+
+        return user.get().getEnabled();
+    }
+
+    /**
+     * Activates a user account.
+     *
+     * @param userDTO The UserDTO containing the user information to activate.
+     */
+    public void activateUser(UserDTO userDTO) {
+        userDTO.setEnabled(true);
+        userRepository.save(userMapper.toEntity(userDTO));
+        log.debug("User activated successfully: {}", userDTO);
+    }
+
+    /**
+     * Finds a user by their email verification token.
+     *
+     * @param token The email verification token to search for.
+     * @return UserDTO The user information associated with the given token.
+     * @throws BadRequestException if no user is found with the given token.
+     */
+    public UserDTO findUserByEmailVerificationToken(String token) {
+        log.debug("Find User by email verification token: {}", token);
+        var user = userRepository.getUserByEmailVerificationTokenEquals(token);
+        if (user.isEmpty()) {
+            throw new BadRequestException("Invalid verification token");
+        }
+
+        return userMapper.toDTO(user.get());
     }
 
     /**
@@ -111,9 +159,40 @@ public class UserService {
         log.debug("Request to User: {}", userDTO);
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());
         userServiceUtil.fieldsToBeUpdated(userDTO, user);
-        var updatedUser = userMapper.toEntity(userDTO);
-        userRepository.save(updatedUser);
-        return userDTO;
+        userMapper.updateUserFromDto(userDTO, user);
+        var updatedUser = userRepository.save(user);
+        return userMapper.toDTO(updatedUser);
+    }
+
+    /**
+     * Retrieves a list of users whose name tags contain the specified substring, ignoring case.
+     * <p>
+     * This method searches for users with a {@code nameTag} that contains the provided substring,
+     * ignoring case. If no users are found, a {@link BadRequestException} is thrown.
+     * For each user found, it maps the user entity to a {@link UserDTO}. If a user does not have an avatar,
+     * a default avatar path is set in the {@link UserDTO}.
+     *
+     * @param nameTag the substring to search for within username tags.
+     * @return a list of {@link UserDTO} objects representing the users whose name tags contain the specified substring.
+     * @throws BadRequestException if no users are found with a name tag containing the specified substring.
+     */
+    public List<UserDTO> getUsersByNameTagContaining(String nameTag) {
+        log.debug("Request to get users by nameTag containing: {}", nameTag);
+        var users = userRepository.findByNameTagContainingIgnoreCase(nameTag);
+
+        if (users.isEmpty()) {
+            throw new BadRequestException("Can't find users with nameTag containing: " + nameTag);
+        }
+
+        return users.stream()
+                .map(user -> {
+                    var dto = userMapper.toDTO(user);
+                    if (user.getAvatar() == null) {
+                        dto.setAvatar("src/main/resources/userProfiles/shield.png");
+                    }
+                    return dto;
+                })
+                .toList();
     }
 
     /**
@@ -135,31 +214,19 @@ public class UserService {
     }
 
     /**
-     * Enable two-step verification for a user.
+     * Updates the two-step verification setting for a user.
      *
-     * @param userId The ID of the user to enable two-step verification for.
+     * @param userId                      The ID of the user whose two-step verification setting is to be updated.
+     * @param twoFactorAuthenticationFlag The new state of the two-factor authentication flag.
+     * @throws BadRequestException if the user with the given ID is not found.
      */
-    public void enableUserTwoStepVerification(Long userId) {
-        log.debug("Request to enable two-step verification for User with ID: {}", userId);
+    public void updateUserTwoStepVerification(Long userId, boolean twoFactorAuthenticationFlag) {
+        log.debug("Request to update two-step verification for User with ID: {} to {}", userId, twoFactorAuthenticationFlag);
         var user = userServiceUtil.validateAndGetUser(userId);
-        user.setTwoFactorAuthentication(true);
+        user.setTwoFactorAuthentication(twoFactorAuthenticationFlag);
         userRepository.save(user);
         userMapper.toDTO(user);
     }
-
-    /**
-     * Disable two-step verification for a user.
-     *
-     * @param userId The ID of the user to enable two-step verification for.
-     */
-    public void disableUserTwoStepVerification(Long userId) {
-        log.debug("Request to disable two-step verification for User with ID: {}", userId);
-        var user = userServiceUtil.validateAndGetUser(userId);
-        user.setTwoFactorAuthentication(false);
-        userRepository.save(user);
-        userMapper.toDTO(user);
-    }
-
 
     /**
      * Change the password for a user identified by their user ID. We receive a userDTO,
@@ -179,8 +246,12 @@ public class UserService {
             throw new BadRequestException("Passwords don't match!");
         }
 
-        if (passwordEncoder.matches(userDTO.getPassword(), userDTO.getNewPassword())) {
+        if (userDTO.getPassword().equals(userDTO.getNewPassword())) {
             throw new BadRequestException("New Password can't be like the old one!");
+        }
+
+        if (!userDTO.getNewPassword().equals(userDTO.getConfirmNewPassword())) {
+            throw new BadRequestException("The new password and the confirm password do not match!");
         }
 
         user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
@@ -190,26 +261,28 @@ public class UserService {
         return userMapper.toDTO(user);
     }
 
-    //TODO: what if we want to change only the 2FA and not the email, same goes for phone number
-    // if the newEmail is empty and the email is null -> email becomes null -> NullPointerException
-    public UserDTO updateUserSecurityData(UserDTO userDTO) {
-        var user = userServiceUtil.validateAndGetUser(userDTO.getId());
+    /**
+     * Resets the password for a given user.
+     *
+     * @param user    The User entity whose password is to be reset.
+     * @param userDTO The UserDTO containing the new password information.
+     * @return UserDTO The updated user information after password reset.
+     * @throws BadRequestException if the new password and confirm password don't match.
+     */
+    public UserDTO passwordReset(User user, UserDTO userDTO) {
+        log.debug("Request to reset password!");
 
-        if (userDTO.getNewEmail() == null || userDTO.getNewEmail().isEmpty()) {
-            userDTO.setNewEmail(user.getEmail());
-        } else {
-            changeEmail(userDTO);
+        if (StringUtils.isNotBlank(userDTO.getNewPassword()) &&
+                StringUtils.isNotBlank(userDTO.getConfirmNewPassword()) &&
+                !userDTO.getNewPassword().equals(userDTO.getConfirmNewPassword())) {
+            throw new BadRequestException("Passwords don't match!");
         }
 
-        if (!Objects.equals(user.getTwoFactorAuthentication(), userDTO.getTwoFactorAuthentication())) {
-            if (Boolean.FALSE.equals(user.getTwoFactorAuthentication())) {
-                enableUserTwoStepVerification(userDTO.getId());
-            } else {
-                disableUserTwoStepVerification(userDTO.getId());
-            }
-        }
+        user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+        userRepository.save(user);
 
-        return userDTO;
+        log.debug("Password reset was successful!");
+        return userMapper.toDTO(user);
     }
 
     /**
@@ -236,31 +309,47 @@ public class UserService {
     /**
      * Generates a verification code for the specified user, saves it, and associates it with the user.
      *
-     * @param optionalUser An optional containing the user for whom the verification code is generated.
+     * @param user The user for whom the verification code is generated.
      * @return The generated verification code.
      * @throws BadRequestException if the user is not found.
      */
-    public String returnSavedVerificationCode(Optional<User> optionalUser) {
+    @Transactional
+    public String returnSavedVerificationCode(User user) {
+        var verificationCode = verificationCodeService.generateVerificationCode(user);
+        user.setVerificationCode(verificationCode);
+        userRepository.saveAndFlush(user);
+        return verificationCode.getCode();
+    }
+
+    /**
+     * Generates and saves a password reset link for a given user.
+     *
+     * @param optionalUser An Optional containing the User for whom to generate the password reset link.
+     * @return String The token of the generated password reset link.
+     * @throws BadRequestException if the Optional<User> is empty (user not found).
+     */
+    public String returnSavedPasswordResetLink(Optional<User> optionalUser) {
         if (optionalUser.isEmpty()) {
             throw new BadRequestException("User not found!");
         }
         var user = optionalUser.get();
-        var verificationCode = verificationCodeService.generateVerificationCode(user);
+        var passwordResetLink = passwordResetLinkService.generatePasswordResetLink(user);
 
-        user.setVerificationCode(verificationCode);
+        user.setPasswordResetLink(passwordResetLink);
         userRepository.save(user);
 
-        return verificationCode.getCode();
+        return passwordResetLink.getToken();
     }
 
     /**
      * Verifies the provided code against the verification code associated with the user.
      *
-     * @param user The user for whom the verification code is verified.
-     * @param code The code to verify.
+     * @param userDTO The userDTO for whom the verification code is verified.
+     * @param code    The code to verify.
      * @return {@code true} if the code is valid and not expired, {@code false} otherwise.
      */
-    public boolean verifyCode(User user, String code) {
+    public boolean verifyCode(UserDTO userDTO, String code) {
+        var user = userServiceUtil.validateAndGetUser(userDTO.getId());
         var verificationCode = user.getVerificationCode();
 
         if (verificationCode != null
@@ -269,12 +358,51 @@ public class UserService {
             user.setVerificationCode(null);
             userRepository.save(user);
             return true;
-
         }
 
         return false;
     }
 
+    /**
+     * Updates the two-factor authentication secret for a user.
+     *
+     * @param user      The User entity to update.
+     * @param secretKey The new two-factor authentication secret key to set.
+     * @throws IllegalArgumentException if user is null or secretKey is null or empty.
+     */
+    public void updateTwoFactorSecret(User user, String secretKey) {
+        user.setTwoFactorSecret(secretKey);
+        userRepository.save(user);
+        log.debug("Updated Two-Factor Secret for User ID: {}", user.getId());
+    }
+
+    /**
+     * Updates the email address of a user identified by their user ID.
+     *
+     * @param userDTO The UserDTO containing the user's ID and new email information.
+     * @return The updated User entity.
+     */
+    public User updateUserEmailEntity(UserDTO userDTO) {
+        log.debug("Request to update email for user with ID: {}", userDTO.getId());
+        var user = userServiceUtil.validateAndGetUser(userDTO.getId());
+
+        validateEmailChange(userDTO, user);
+        user.setEmail(userDTO.getNewEmail());
+        userRepository.save(user);
+
+        return user;
+    }
+
+    /**
+     * Updates the email address of a user and returns the updated UserDTO.
+     *
+     * @param userDTO The UserDTO containing the user's ID and new email information.
+     * @return The updated UserDTO.
+     */
+    public UserDTO updateUserEmail(UserDTO userDTO) {
+        var user = updateUserEmailEntity(userDTO);
+        return userMapper.toDTO(user);
+    }
 
     /**
      * Validates the change of email for a user.
@@ -297,18 +425,257 @@ public class UserService {
     }
 
     /**
-     * Change the email address for a user identified by their user ID.
+     * Updates the user's avatar.
      *
-     * @param userDTO The UserDTO.
+     * @param userId     The ID of the user whose avatar is being updated.
+     * @param avatarFile The new avatar file.
+     * @return UserDTO The updated user information.
+     * @throws BadRequestException if the avatar file cannot be saved.
      */
-    //TODO: When changing the email, it would be a good idea for the user
-    // to enter a verification code sent to the new email and then the email will be changed.
-    private void changeEmail(UserDTO userDTO) {
-        log.debug("Request to update email for user with ID: {}", userDTO.getId());
+    public UserDTO updateUserAvatar(Long userId, MultipartFile avatarFile) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+
+        if (user.getAvatar() != null) {
+            deleteAvatarFile(user.getAvatar());
+        }
+
+        var avatarUrl = saveAvatarFile(avatarFile);
+        user.setAvatar(avatarUrl);
+        var updatedUser = userRepository.save(user);
+        return userMapper.toDTO(updatedUser);
+    }
+
+    /**
+     * Saves the avatar file to the file system.
+     *
+     * @param avatarFile The avatar file to save.
+     * @return String The URL of the saved avatar file.
+     * @throws BadRequestException if the file cannot be saved.
+     */
+    private String saveAvatarFile(MultipartFile avatarFile) {
+        try {
+            Files.createDirectories(Paths.get(USER_PROFILE_DIR));
+            var filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
+            var filePath = Paths.get(USER_PROFILE_DIR, filename);
+            Files.write(filePath, avatarFile.getBytes());
+            return filename;
+        } catch (IOException e) {
+            throw new BadRequestException("Failed to save avatar file");
+        }
+    }
+
+    /**
+     * Deletes the old avatar file from the file system.
+     *
+     * @param avatarUrl The URL of the old avatar file.
+     * @throws BadRequestException if the file cannot be deleted.
+     */
+    private void deleteAvatarFile(String avatarUrl) {
+        try {
+            var filePath = Paths.get("src/main/resources/", avatarUrl);
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            throw new BadRequestException("Failed to delete old avatar file");
+        }
+    }
+
+    /**
+     * Updates the user's username.
+     *
+     * @param userDTO The DTO containing the user ID and new username.
+     * @return UserDTO The updated user information.
+     * @throws BadRequestException if the new username is empty or the same as the old username.
+     */
+    public UserDTO updateUsername(UserDTO userDTO) {
         var user = userServiceUtil.validateAndGetUser(userDTO.getId());
-        validateEmailChange(userDTO, user);
-        user.setEmail(userDTO.getNewEmail());
+
+        if (StringUtils.isBlank(userDTO.getNewUsername())) {
+            throw new BadRequestException("New username cannot be empty!");
+        }
+
+        if (user.getUsername().equals(userDTO.getNewUsername())) {
+            throw new BadRequestException("New username cannot be like the old one!");
+        }
+
+        user.setUsername(userDTO.getNewUsername());
         userRepository.save(user);
-        userMapper.toDTO(user);
+        return userMapper.toDTO(user);
+    }
+
+    /**
+     * Updates the phone number for a user.
+     *
+     * @param userDTO The UserDTO containing the user's ID, current phone number, and new phone number.
+     * @return UserDTO The updated user information.
+     * @throws BadRequestException If the new phone number is empty or if the current phone number doesn't match the existing one.
+     */
+    public UserDTO updatePhoneNumber(UserDTO userDTO) {
+        var user = userServiceUtil.validateAndGetUser(userDTO.getId());
+
+        if (StringUtils.isBlank(userDTO.getNewPhoneNumber())) {
+            throw new BadRequestException("New phone number cannot be empty!");
+        }
+
+        if (StringUtils.isNotBlank(user.getPhoneNumber()) &&
+                !user.getPhoneNumber().equals(userDTO.getPhoneNumber())) {
+            throw new BadRequestException("Current phone number does not match the existing phone number!");
+        }
+
+        user.setPhoneNumber(userDTO.getNewPhoneNumber());
+        userRepository.save(user);
+        return userMapper.toDTO(user);
+    }
+
+    /**
+     * Sets the budgeting flag for a user.
+     *
+     * @param userId             The ID of the user.
+     * @param budgetingFlagValue The boolean value to set for the budgeting flag.
+     * @throws BadRequestException If the user is not found.
+     */
+    public void setUserBudgeting(Long userId, boolean budgetingFlagValue) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        user.setIsBudgetingEnabled(budgetingFlagValue);
+        userRepository.save(user);
+    }
+
+    /**
+     * Retrieves the content of a user's avatar file.
+     *
+     * @param filename The name of the avatar file.
+     * @return byte[] The content of the avatar file.
+     * @throws BadRequestException If there's an error reading the avatar file.
+     */
+    public byte[] getAvatarContent(String filename) {
+        try {
+            var filePath = Paths.get(USER_PROFILE_DIR).resolve(filename).normalize();
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new BadRequestException("Error reading avatar file: " + filename);
+        }
+    }
+
+    /**
+     * Finds the email address associated with a given username.
+     *
+     * @param username The username to search for.
+     * @return String The email address associated with the username.
+     */
+    public String findEmailByUsername(String username) {
+        return userRepository.findEmailByUsername(username);
+    }
+
+    /**
+     * Adds a friend to the user's friend list and vice versa.
+     * <p>
+     * This method validates the user by their ID and finds the friend by their {@code friendNameTag}.
+     * If the friend is found, both users are added to each other's friends list.
+     * The changes are then saved in the repository for persistence.
+     *
+     * @param userId        the ID of the user who is adding a friend.
+     * @param friendNameTag the name tag of the friend to be added.
+     * @throws BadRequestException if the user or friend cannot be found.
+     */
+    public void addFriend(Long userId, String friendNameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        var friend = userRepository.findByNameTag(friendNameTag)
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + friendNameTag));
+
+        user.getFriendsList().add(friend);
+        friend.getFriendsList().add(user);
+
+        userRepository.save(user);
+        userRepository.save(friend);
+    }
+
+    /**
+     * Removes a friend from the user's friend list and vice versa.
+     * <p>
+     * This method validates the user by their ID and finds the friend by their {@code friendNameTag}.
+     * If the friend is found, both users are removed from each other's friends list.
+     * The changes are then saved in the repository for persistence.
+     *
+     * @param userId        the ID of the user who is removing a friend.
+     * @param friendNameTag the name tag of the friend to be removed.
+     * @throws BadRequestException if the user or friend cannot be found.
+     */
+    public void removeFriend(Long userId, String friendNameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        var friend = userRepository.findByNameTag(friendNameTag)
+                .orElseThrow(() -> new BadRequestException("User not found with nameTag: " + friendNameTag));
+
+        user.getFriendsList().remove(friend);
+        friend.getFriendsList().remove(user);
+
+        userRepository.save(user);
+        userRepository.save(friend);
+    }
+
+    /**
+     * Checks if two users are friends.
+     * <p>
+     * This method validates the user by their ID and checks if the {@code otherUserId}
+     * is present in the user's friends list.
+     *
+     * @param userId      the ID of the user whose friends list is to be checked.
+     * @param otherUserId the ID of the other user to check for friendship.
+     * @return {@code true} if the {@code otherUserId} is found in the user's friends list, {@code false} otherwise.
+     */
+    public Boolean isFriend(Long userId, Long otherUserId) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+        return user.getFriendsList().stream()
+                .anyMatch(friend -> friend.getId().equals(otherUserId));
+    }
+
+    /**
+     * Searches the user's friend list by a partial or full name tag.
+     * <p>
+     * This method validates the user by their ID and filters their friends list
+     * to find friends whose name tags contain the specified {@code nameTag} (case-insensitive).
+     *
+     * @param userId  the ID of the user whose friends list is to be searched.
+     * @param nameTag the partial or full name tag to search for in the friends list.
+     * @return a set of {@link FriendDTO} objects matching the search criteria.
+     */
+    public Set<FriendDTO> searchFriendByNameTag(Long userId, String nameTag) {
+        var user = userServiceUtil.validateAndGetUser(userId);
+
+        return user.getFriendsList().stream()
+                .filter(friend -> friend.getNameTag().toLowerCase().contains(nameTag.toLowerCase()))
+                .map(userMapper::toFriendDTO)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Checks if two-factor authentication is enabled for a specific user.
+     * <p>
+     * This method finds the user by their username and checks if two-factor authentication
+     * is enabled for that user in the repository.
+     *
+     * @param username the username of the user to check for two-factor authentication.
+     * @return {@code true} if two-factor authentication is enabled, {@code false} otherwise.
+     * @throws BadRequestException if the user cannot be found.
+     */
+    public Boolean isTwoFactorAuthenticationEnabled(String username) {
+        var validatedUsername = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new BadRequestException("User with this username doesn't exist!"))
+                .getUsername();
+        return userRepository.isTwoFactorAuthenticationEnabled(validatedUsername);
+    }
+
+    /**
+     * Configures a new user with default values and settings.
+     *
+     * @param user the User to be created.
+     */
+    private void configureNewUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setNameTag(userServiceUtil.generateNameTag(user.getUsername()));
+        user.setRole(Roles.ROLE_USER);
+        user.setLocked(false);
+        user.setEnabled(false);
+        user.setIsBudgetingEnabled(false);
+        user.setTwoFactorAuthentication(false);
     }
 }

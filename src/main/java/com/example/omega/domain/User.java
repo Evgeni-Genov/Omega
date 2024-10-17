@@ -1,11 +1,13 @@
 package com.example.omega.domain;
 
 import com.example.omega.domain.enumeration.Roles;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table
@@ -41,14 +43,8 @@ public class User extends AbstractAuditingEntity {
     private String nameTag;
 
     @Column
-    @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$")
+    @Pattern(regexp = "^\\+\\d{1,3}\\d{1,14}(\\s\\d{1,13})?$", message = "Phone number must be a valid international number starting with '+'")
     private String phoneNumber;
-
-    @Column
-    private Boolean locked;
-
-    @Column
-    private Boolean enabled;
 
     @Column
     private String address;
@@ -60,35 +56,69 @@ public class User extends AbstractAuditingEntity {
     private String countryOfBirth;
 
     @Column
-    @OneToMany(mappedBy = "user")
-    private List<AccountBalance> accountBalances;
+    private String twoFactorSecret;
 
     @Column
-    @OneToMany(mappedBy = "sender")
-    private List<Transaction> outgoingTransactions;
+    private String avatar;
 
     @Column
-    @OneToMany(mappedBy = "recipient")
-    private List<Transaction> incomingTransactions;
+    private String emailVerificationToken;
+
+    @Column
+    private Boolean locked;
+
+    @Column
+    private Boolean enabled;
+
+    @Column
+    private Boolean twoFactorAuthentication;
+
+    @Column
+    private Boolean isBudgetingEnabled = Boolean.FALSE;
 
     @Column
     @Enumerated(EnumType.STRING)
     private Roles role;
 
-    @Column
-    private Boolean twoFactorAuthentication;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "verification_code_id", referencedColumnName = "id")
+    private VerificationCode verificationCode;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @JoinColumn(name = "verification_code_id")
-    private VerificationCode verificationCode;
+    private PasswordResetLink passwordResetLink;
+
+    @Column
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    private List<Budget> budgets;
+
+    @Column
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
+    private List<AccountBalance> accountBalances;
+
+    @Column
+    @OneToMany(mappedBy = "sender", fetch = FetchType.EAGER)
+    private List<Transaction> outgoingTransactions;
+
+    @Column
+    @OneToMany(mappedBy = "recipient", fetch = FetchType.EAGER)
+    private List<Transaction> incomingTransactions;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_friends_list",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "friend_id")
+    )
+    @JsonIgnore
+    private Set<User> friendsList;
 
 //    @Column
 //    @JoinColumn(unique = true)
 //    private UserDetailsImpl userDetails;
 
-    public void setVerificationCode(VerificationCode verificationCode) {
-        this.verificationCode = verificationCode;
-        verificationCode.setUser(this);
+    public void setPasswordResetLink(PasswordResetLink passwordResetLink) {
+        this.passwordResetLink = passwordResetLink;
+        passwordResetLink.setUser(this);
     }
 
 }

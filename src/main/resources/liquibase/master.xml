@@ -18,14 +18,14 @@
     <include file="liquibase/20231409/20231409190500_added_entity_User.xml" relativeToChangelogFile="false"/>
     <include file="liquibase/20231409/20231409190501_added_entity_AccountBalance.xml" relativeToChangelogFile="false"/>
     <include file="liquibase/20231409/20231409190502_added_entity_Transaction.xml" relativeToChangelogFile="false"/>
-    <include file="liquibase/20231409/20231409190503_added_entity_TransactionStateHistory.xml" relativeToChangelogFile="false"/>
     <include file="liquibase/20231409/20231409190504_added_entity_UserDocument.xml" relativeToChangelogFile="false"/>
-
     <include file="liquibase/20242603/20242603211900_added_entity_VerificationCode.xml"
              relativeToChangelogFile="false"/>
+    <include file="liquibase/20242805/20242805103100_added_entity_PasswordResetLink.xml"
+             relativeToChangelogFile="false"/>
+    <include file="liquibase/20242506/202425060000_added_entity_Budget.xml" relativeToChangelogFile="false"/>
 
     <!-- Include foreign key constraints for User entity -->
-
 
     <!-- END HERE -->
 </databaseChangeLog>

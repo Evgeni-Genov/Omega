@@ -6,9 +6,10 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 
 @Repository
 public interface VerificationCodeRepository extends JpaRepository<VerificationCode, Long>, CrudRepository<VerificationCode, Long> {
 
-    void deleteByExpirationTimeBefore(Instant expirationTime);
+    List<VerificationCode> findByExpirationTimeBefore(Instant expirationTime);
 }
