@@ -1,16 +1,16 @@
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
-import Home from './assets/Components/Home/Home.tsx';
-import UserProfile from './assets/Components/Profile/UserProfile.tsx';
+import Home from './assets/Main/Home/Home.tsx';
+import UserProfile from './assets/Main/Profile/UserProfile.tsx';
 import './App.css';
-import SignIn from "./assets/Components/Login/SignIn.tsx";
-import SignUp from "./assets/Components/Registration/SignUp.tsx";
-import ResetPassword from "./assets/Components/Login/ResetPassword.tsx";
+import SignIn from "./assets/Main/Login/SignIn.tsx";
+import SignUp from "./assets/Main/Registration/SignUp.tsx";
+import ResetPassword from "./assets/Main/Login/ResetPassword.tsx";
 import {useState} from "react";
-import MainPage from "./assets/Components/Main/MainPage.tsx";
+import MainPage from "./assets/Main/Main/MainPage.tsx";
 
 function App() {
-    const [loggedIn, setLoggedIn] = useState(false);
-    const [email, setEmail] = useState('');
+    const [loggedIn, setLoggedIn] = useState<boolean>(false);
+    const [email] = useState<string>('');
 
     return (
         <div className="App">
